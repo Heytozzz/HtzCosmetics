@@ -12,7 +12,7 @@
  *   POST   /v1/auth/challenge    {"uuid"}                                       -> {"challenge","expiresIn"}
  *   POST   /v1/auth/certificate  {"uuid","challenge","publicKey","expiresAt",
  *                                 "keySignature","signature"}                   -> {"token","uuid","expiresIn"}
- *   GET    /v1/equipped?u=<uuid>,<uuid>,...                                     -> {"players":{"<uuid>":["id",...]}}
+ *   GET    /v1/equipped?u=<uuid>,<uuid>,...[&fresh=1 with one uuid]             -> {"players":{"<uuid>":["id",...]}}
  *   PUT    /v1/me/equipped       {"ids":[...]}                           Bearer -> {"ok":true}
  *   DELETE /v1/me                                                        Bearer -> {"ok":true}  (deletes the caller's data)
  */
@@ -171,11 +171,20 @@ async function getEquipped(request, url, env, ctx) {
   if (uuids.length === 0 || uuids.length > MAX_BATCH) throw new HttpError(400, "bad_players");
   for (const u of uuids) if (!UUID_RE.test(u)) throw new HttpError(400, "bad_players");
 
+  // "fresh=1": skip the cache for ONE player, after that player signalled a change. Separately rate-limited.
+  const fresh = url.searchParams.get("fresh") === "1";
+  if (fresh) {
+    if (uuids.length !== 1) throw new HttpError(400, "fresh_needs_one_player");
+    await limit(env.FRESH_LIMITER, "fresh:" + clientIp(request));
+  }
+
   // Edge cache keyed by the canonical (sorted) list: repeated lookups do not touch the database.
   const cacheKey = new Request(`${url.origin}/v1/equipped?u=${uuids.join(",")}`, { method: "GET" });
   const cache = caches.default;
-  const cached = await cache.match(cacheKey);
-  if (cached) return cached;
+  if (!fresh) {
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+  }
 
   const placeholders = uuids.map(() => "?").join(",");
   const { results } = await env.DB.prepare(`SELECT uuid, ids FROM equipped WHERE uuid IN (${placeholders})`)

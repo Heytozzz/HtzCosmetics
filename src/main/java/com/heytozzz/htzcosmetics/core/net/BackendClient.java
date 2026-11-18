@@ -6,6 +6,7 @@ import com.heytozzz.htzcosmetics.core.json.StrictJsonParser;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,12 +39,34 @@ public final class BackendClient {
      * @return cosmetic ids per player; players with nothing equipped are absent
      */
     public Map<UUID, List<String>> fetchEquipped(Collection<UUID> players) throws IOException, ValidationException {
+        return fetch(players, false);
+    }
+
+    /** Bypasses the backend's 60 s cache for one player (used after a change signal; rate-limited by the backend). */
+    public List<String> fetchEquippedFresh(UUID player) throws IOException, ValidationException {
+        return fetch(List.of(player), true).getOrDefault(player, List.of());
+    }
+
+    /** Saves the caller's own selection (needs a login token). */
+    public void putEquipped(String token, List<String> ids) throws IOException {
+        if (ids.size() > MAX_EQUIPPED) throw new IllegalArgumentException("too many ids");
+        StringBuilder body = new StringBuilder("{\"ids\":[");
+        for (int i = 0; i < ids.size(); i++) {
+            if (!ID.matcher(ids.get(i)).matches()) throw new IllegalArgumentException("bad id");
+            body.append(i == 0 ? "" : ",").append('"').append(ids.get(i)).append('"');
+        }
+        body.append("]}");
+        http.send("PUT", base.resolve("v1/me/equipped"), body.toString().getBytes(StandardCharsets.US_ASCII), token, 4096);
+    }
+
+    private Map<UUID, List<String>> fetch(Collection<UUID> players, boolean fresh) throws IOException, ValidationException {
         if (players.isEmpty() || players.size() > MAX_BATCH) throw new IllegalArgumentException("1.." + MAX_BATCH + " players");
         // Sorted so identical lookups share the backend's edge cache.
         Map<String, UUID> requested = new TreeMap<>();
         for (UUID u : players) requested.put(undashed(u), u);
 
-        byte[] body = http.get(base.resolve("v1/equipped?u=" + String.join(",", requested.keySet())), MAX_RESPONSE_BYTES);
+        String query = "v1/equipped?u=" + String.join(",", requested.keySet()) + (fresh ? "&fresh=1" : "");
+        byte[] body = http.get(base.resolve(query), MAX_RESPONSE_BYTES);
         Map<String, Object> root = Json.asObject(StrictJsonParser.parse(body, MAX_RESPONSE_BYTES), "response");
         Map<String, Object> playersObj = Json.object(root, "players");
 

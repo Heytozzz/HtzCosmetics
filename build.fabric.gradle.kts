@@ -51,7 +51,7 @@ dependencies {
     "modGametestImplementation"(fabricApi.module("fabric-client-gametest-api-v1", sc.properties["deps.fabric_api"]))
 
     fapi("fabric-api-base", "fabric-command-api-v2", "fabric-lifecycle-events-v1", "fabric-resource-loader-v0",
-        "fabric-rendering-v1")
+        "fabric-rendering-v1", "fabric-key-binding-api-v1")
 
     // Unit tests (JUnit). Only used when running tests, never shipped in the mod.
     testImplementation(platform("org.junit:junit-bom:${sc.properties["deps.junit"]}"))

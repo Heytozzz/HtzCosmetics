@@ -3,6 +3,7 @@ package com.heytozzz.htzcosmetics.client;
 import com.heytozzz.htzcosmetics.HtzCosmetics;
 import com.heytozzz.htzcosmetics.core.cache.AssetCache;
 import com.heytozzz.htzcosmetics.core.cache.ManifestStore;
+import com.heytozzz.htzcosmetics.core.net.AuthClient;
 import com.heytozzz.htzcosmetics.core.net.BackendClient;
 import com.heytozzz.htzcosmetics.core.net.Endpoints;
 import com.heytozzz.htzcosmetics.core.net.SecureHttp;
@@ -29,8 +30,10 @@ public final class ClientBootstrap {
     /** Called once when the client has started. */
     public static synchronized void init() {
         if (source != null) return;
+        ClientState.load();
         http = SecureHttp.production("HtzCosmetics/" + HtzCosmetics.VERSION + " (Minecraft " + HtzCosmetics.MINECRAFT + ")");
         backend = new BackendClient(http, Endpoints.BACKEND);
+        OwnCosmetics.init(http, backend, new AuthClient(http, Endpoints.BACKEND));
 
         String devSite = System.getProperty(DEV_SITE_PROPERTY);
         if (devSite != null && !devSite.isBlank() && Files.isDirectory(Path.of(devSite))) {

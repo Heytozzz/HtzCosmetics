@@ -22,6 +22,8 @@ public final class TestServer implements AutoCloseable {
     private final HttpServer server;
     public final Map<String, Reply> routes = new ConcurrentHashMap<>();
     public final Map<String, AtomicInteger> hits = new ConcurrentHashMap<>();
+    /** Last request per path: method, body and Authorization header. */
+    public final Map<String, String[]> lastRequest = new ConcurrentHashMap<>();
 
     public TestServer() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -29,6 +31,9 @@ public final class TestServer implements AutoCloseable {
             String key = exchange.getRequestURI().getRawPath()
                 + (exchange.getRequestURI().getRawQuery() == null ? "" : "?" + exchange.getRequestURI().getRawQuery());
             hits.computeIfAbsent(key, k -> new AtomicInteger()).incrementAndGet();
+            lastRequest.put(key, new String[]{exchange.getRequestMethod(),
+                new String(exchange.getRequestBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8),
+                String.valueOf(exchange.getRequestHeaders().getFirst("Authorization"))});
             Reply reply = routes.getOrDefault(key, new Reply(404, new byte[0], Map.of(), false));
             reply.headers().forEach((k, v) -> exchange.getResponseHeaders().add(k, v));
             exchange.sendResponseHeaders(reply.status(), reply.chunked() ? 0 : (reply.body().length == 0 ? -1 : reply.body().length));

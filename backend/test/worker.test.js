@@ -177,6 +177,22 @@ describe("equipped", () => {
     expect(await baseEnv.DB.prepare("SELECT COUNT(*) AS n FROM equipped").first("n")).toBe(0);
   });
 
+  it("fresh lookups skip the cache, for one player only, and are rate-limited", async () => {
+    const P = "11112222333344445555666677778888"; // own player: earlier tests used up UUID's write limit
+    const token = await login(P);
+    await call("PUT", "/v1/me/equipped", { token, body: { ids: ["a"] } });
+    expect((await call("GET", `/v1/equipped?u=${P}`)).json.players).toEqual({ [P]: ["a"] }); // now cached
+    await baseEnv.DB.prepare("UPDATE equipped SET updated_at = 0").run();
+    await call("PUT", "/v1/me/equipped", { token, body: { ids: ["b"] } });
+    expect((await call("GET", `/v1/equipped?u=${P}`)).json.players).toEqual({ [P]: ["a"] }); // stale cache
+    expect((await call("GET", `/v1/equipped?u=${P}&fresh=1`)).json.players).toEqual({ [P]: ["b"] });
+    expect((await call("GET", `/v1/equipped?u=${P}`)).json.players).toEqual({ [P]: ["b"] }); // cache refreshed
+    expect((await call("GET", `/v1/equipped?u=${P},${OTHER}&fresh=1`)).status).toBe(400);
+    const statuses = [];
+    for (let i = 0; i < 32; i++) statuses.push((await call("GET", `/v1/equipped?u=${OTHER}&fresh=1`, { ip: "192.0.2.50" })).status);
+    expect(statuses.at(-1)).toBe(429);
+  });
+
   it("rejects bad player lists", async () => {
     expect((await call("GET", "/v1/equipped")).status).toBe(400);
     expect((await call("GET", "/v1/equipped?u=not-a-uuid")).status).toBe(400);

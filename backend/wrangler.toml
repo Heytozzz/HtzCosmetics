@@ -23,6 +23,11 @@ namespace_id = "7102"
 simple = { limit = 120, period = 60 }
 
 [[ratelimits]]
+name = "FRESH_LIMITER"
+namespace_id = "7104"
+simple = { limit = 30, period = 60 }
+
+[[ratelimits]]
 name = "WRITE_LIMITER"
 namespace_id = "7103"
 simple = { limit = 10, period = 60 }

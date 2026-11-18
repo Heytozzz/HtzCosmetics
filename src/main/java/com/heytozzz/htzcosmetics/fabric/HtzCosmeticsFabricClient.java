@@ -4,8 +4,9 @@ package com.heytozzz.htzcosmetics.fabric;
 import com.heytozzz.htzcosmetics.HtzCosmetics;
 import com.heytozzz.htzcosmetics.client.ClientBootstrap;
 import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
-import com.heytozzz.htzcosmetics.client.EquippedCosmetics;
+import com.heytozzz.htzcosmetics.client.OwnCosmetics;
 import com.heytozzz.htzcosmetics.client.RemoteSync;
+import com.heytozzz.htzcosmetics.client.gui.CosmeticsScreen;
 import com.heytozzz.htzcosmetics.client.render.CosmeticLayer;
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -16,12 +17,15 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.network.chat.Component;
 
-import java.util.UUID;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * Fabric client entrypoint. Only Fabric-specific glue lives in this package;
@@ -38,11 +42,24 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
         });
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientBootstrap.init());
-        ClientTickEvents.END_CLIENT_TICK.register(RemoteSync::tick);
+        KeyMapping openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.htzcosmetics.open",
+            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_J, "key.categories.htzcosmetics"));
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            RemoteSync.tick(client);
+            while (openKey.consumeClick()) {
+                if (client.screen == null) client.setScreen(new CosmeticsScreen(null));
+            }
+        });
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
             ClientCommandManager.literal(HtzCosmetics.MOD_ID)
                 .executes(HtzCosmeticsFabricClient::status)
                 .then(ClientCommandManager.literal("list").executes(HtzCosmeticsFabricClient::list))
+                .then(ClientCommandManager.literal("menu").executes(ctx -> {
+                    // Deferred: the chat screen closes right after the command runs.
+                    Minecraft mc = Minecraft.getInstance();
+                    mc.execute(() -> mc.setScreen(new CosmeticsScreen(null)));
+                    return 1;
+                }))
                 .then(ClientCommandManager.literal("reload").executes(ctx -> {
                     ClientBootstrap.loadCosmetics(true);
                     ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.reloading"));
@@ -59,15 +76,12 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
                     .then(ClientCommandManager.argument("id", StringArgumentType.word())
                         .suggests((ctx, builder) -> {
                             builder.suggest("all");
-                            for (String id : EquippedCosmetics.get(self())) builder.suggest(id);
+                            for (CosmeticDefinition def : CosmeticLibrary.get().available()) {
+                                if (OwnCosmetics.isEquipped(def.id())) builder.suggest(def.id());
+                            }
                             return builder.buildFuture();
                         })
                         .executes(HtzCosmeticsFabricClient::unequip)))));
-    }
-
-    private static UUID self() {
-        Minecraft mc = Minecraft.getInstance();
-        return mc.player != null ? mc.player.getUUID() : mc.getUser().getProfileId();
     }
 
     private static String language() {
@@ -101,7 +115,7 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
             ctx.getSource().sendError(Component.translatable("htzcosmetics.command.unknown", id));
             return 0;
         }
-        EquippedCosmetics.equip(self(), def);
+        OwnCosmetics.equip(def);
         ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.equipped",
             Component.literal(def.displayName(language()))));
         return 1;
@@ -110,11 +124,11 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
     private static int unequip(CommandContext<FabricClientCommandSource> ctx) {
         String id = StringArgumentType.getString(ctx, "id");
         if (id.equals("all")) {
-            EquippedCosmetics.clear(self());
+            OwnCosmetics.unequipAll();
             ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.unequipped_all"));
             return 1;
         }
-        boolean removed = EquippedCosmetics.unequip(self(), id);
+        boolean removed = OwnCosmetics.unequip(id);
         ctx.getSource().sendFeedback(Component.translatable(removed
             ? "htzcosmetics.command.unequipped" : "htzcosmetics.command.not_worn", id));
         return removed ? 1 : 0;
