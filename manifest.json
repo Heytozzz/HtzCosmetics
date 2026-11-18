@@ -1,0 +1,27 @@
+{
+  "format": 1,
+  "manifestVersion": 1794986130,
+  "expiresAt": 1810538130,
+  "cosmetics": [
+    {
+      "id": "top_hat",
+      "name": {
+        "en_us": "Top hat",
+        "es_es": "Chistera",
+        "es_mx": "Sombrero de copa"
+      },
+      "category": "HEAD",
+      "rarity": "RARE",
+      "anchor": "HEAD",
+      "minFormat": 1,
+      "model": {
+        "sha256": "7e004d0b46f0c8b9689195ffdec236a01e13bf19207b540744a167ced8b3f059",
+        "size": 420
+      },
+      "texture": {
+        "sha256": "020c79a92cf72e9a21605ac7c48b34072beda2b03b37d6b91be9c8d9dba758af",
+        "size": 1078
+      }
+    }
+  ]
+}
