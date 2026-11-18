@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "manifestVersion": 1795032910,
-  "expiresAt": 1810584910,
+  "manifestVersion": 1795036804,
+  "expiresAt": 1810588804,
   "cosmetics": [
     {
       "id": "angel_halo",
@@ -21,6 +21,33 @@
       "texture": {
         "sha256": "5f9062f4a7a76f0baf9b83d3a7b119f4f4540fa92ef8ec8605168b83432b9799",
         "size": 591
+      }
+    },
+    {
+      "id": "red_aura",
+      "name": {
+        "en_us": "Red Aura",
+        "es_es": "Aura Roja",
+        "es_mx": "Aura Roja"
+      },
+      "category": "AURA",
+      "rarity": "EPIC",
+      "anchor": "BODY",
+      "minFormat": 2,
+      "glow": {
+        "colors": [
+          "#FF0000",
+          "#FF3333"
+        ],
+        "cycle": 4,
+        "emissive": true,
+        "bloom": 0.75,
+        "radius": 3,
+        "pulse": 0
+      },
+      "aura": {
+        "fill": 0.05,
+        "outline": 0.05
       }
     },
     {
