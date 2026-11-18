@@ -6,6 +6,9 @@ import com.heytozzz.htzcosmetics.core.net.AuthClient;
 import com.heytozzz.htzcosmetics.core.net.BackendClient;
 import com.heytozzz.htzcosmetics.core.net.SecureHttp;
 import net.minecraft.client.Minecraft;
+import com.heytozzz.htzcosmetics.mixin.UserApiAccessor;
+import net.minecraft.client.multiplayer.AccountProfileKeyPairManager;
+import net.minecraft.client.multiplayer.ProfileKeyPairManager;
 import net.minecraft.world.entity.player.ProfileKeyPair;
 import net.minecraft.world.entity.player.ProfilePublicKey;
 
@@ -26,6 +29,8 @@ public final class OwnCosmetics {
 
     private static final long SAVE_DELAY_MS = 1_500;
     private static final long RETRY_DELAY_MS = 3_000;
+    /** Without a certificate the selection stays local; try again this often (Mojang may have been down). */
+    private static final long CERTIFICATE_RETRY_MS = 120_000;
 
     private static volatile Status status = Status.IDLE;
     // Client thread only.
@@ -108,6 +113,11 @@ public final class OwnCosmetics {
                 status = result;
                 if (result == Status.SAVED) ChangeSignal.send();
                 if (result == Status.ERROR) markDirty(RETRY_DELAY_MS * 10);
+                if (result == Status.LOCAL_ONLY) {
+                    // Keep showing "local only", but try again later without bothering the player.
+                    dirty = true;
+                    saveAt = System.currentTimeMillis() + CERTIFICATE_RETRY_MS;
+                }
             });
         });
     }
@@ -142,17 +152,45 @@ public final class OwnCosmetics {
         return Status.ERROR;
     }
 
-    /** The Mojang-signed chat certificate, if this account has one. */
+    /**
+     * The Mojang-signed player certificate (the one Minecraft uses for chat), if this account can get one.
+     *
+     * <p>First from Minecraft's own certificate manager. If that has none (Mojang was briefly unavailable, it did
+     * not answer in time, or another mod replaced the manager), ask Mojang again with a fresh manager of the same
+     * vanilla class, through Minecraft's own account service: the access token is handled by Minecraft and Mojang's
+     * library, never by this mod. The certificate is only used to prove to our backend who the player is; it is not
+     * used for chat.
+     */
     private static Optional<AuthClient.Certificate> certificate() {
+        Minecraft mc = Minecraft.getInstance();
+        Optional<ProfileKeyPair> pair = fetch("Minecraft's certificate manager", mc.getProfileKeyPairManager());
+        if (pair.isEmpty()) {
+            try {
+                var service = ((UserApiAccessor) mc).htzcosmetics$userApiService();
+                pair = fetch("a fresh certificate request",
+                    new AccountProfileKeyPairManager(service, ClientState.self(), mc.gameDirectory.toPath()));
+            } catch (Exception e) {
+                HtzCosmetics.LOGGER.warn("Could not request a Mojang certificate: {}", e.toString());
+            }
+        }
+        if (pair.isEmpty()) {
+            HtzCosmetics.LOGGER.warn("No Mojang player certificate: your cosmetics are saved on this computer only, "
+                + "so other players cannot see them yet. Retrying in {} s. (Offline/cracked accounts never get one.)",
+                CERTIFICATE_RETRY_MS / 1000);
+            return Optional.empty();
+        }
+        ProfilePublicKey.Data data = pair.get().publicKey().data();
+        return Optional.of(new AuthClient.Certificate(data.key(), pair.get().privateKey(),
+            data.expiresAt().toEpochMilli(), data.keySignature()));
+    }
+
+    private static Optional<ProfileKeyPair> fetch(String from, ProfileKeyPairManager manager) {
         try {
-            Optional<ProfileKeyPair> pair = Minecraft.getInstance().getProfileKeyPairManager().prepareKeyPair()
-                .get(15, TimeUnit.SECONDS);
-            if (pair.isEmpty()) return Optional.empty();
-            ProfilePublicKey.Data data = pair.get().publicKey().data();
-            return Optional.of(new AuthClient.Certificate(data.key(), pair.get().privateKey(),
-                data.expiresAt().toEpochMilli(), data.keySignature()));
+            Optional<ProfileKeyPair> pair = manager.prepareKeyPair().get(30, TimeUnit.SECONDS);
+            if (pair.isEmpty()) HtzCosmetics.LOGGER.info("No Mojang certificate from {}", from);
+            return pair;
         } catch (Exception e) {
-            HtzCosmetics.LOGGER.debug("No Mojang certificate available: {}", e.toString());
+            HtzCosmetics.LOGGER.info("No Mojang certificate from {}: {}", from, e.toString());
             return Optional.empty();
         }
     }
