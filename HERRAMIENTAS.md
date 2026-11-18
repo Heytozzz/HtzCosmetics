@@ -55,7 +55,11 @@ Este comando:
 - firma el manifiesto;
 - deja el resultado en la carpeta `site/`.
 
-Si algo falla, te dice qué cosmético y qué regla, y no publica nada. El contenido de `site/` es lo que se sube a GitHub Pages (en la Fase 4 lo dejaremos automatizado).
+Si algo falla, te dice qué cosmético y qué regla, y no publica nada. El contenido de `site/` es lo que se sube a GitHub Pages con `htzPublishSite` (punto 4).
+
+Para verlo en el juego antes de publicarlo, ejecuta `.\gradlew.bat :1.21.8-fabric:runClient`: ese cliente de prueba carga los cosméticos desde `site/` en vez de desde Internet.
+
+Los jugadores **no necesitan actualizar el mod** para ver cosméticos nuevos: el mod revisa la lista al arrancar y cada 30 minutos (o al momento con `/htzcosmetics reload`).
 
 **La firma caduca a los 180 días.** Vuelve a ejecutar el comando antes de esa fecha aunque no hayas cambiado nada. Para elegir otra duración: `.\gradlew.bat htzBuildSite --args="--days 365"`.
 
