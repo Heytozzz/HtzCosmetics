@@ -112,6 +112,9 @@ java {
 }
 
 tasks {
+    // Ship the license inside the mod jar.
+    named<Jar>("jar") { from(rootProject.file("LICENSE")) { rename { "LICENSE_htzcosmetics" } } }
+
     processResources {
         fun MutableMap<String, String>.register(key: String, value: String) {
             inputs.property(key, value)

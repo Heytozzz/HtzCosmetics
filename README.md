@@ -37,3 +37,9 @@ with size limits and timeouts. Details (in Spanish): [SEGURIDAD.md](SEGURIDAD.md
 
 See [PRIVACY.md](PRIVACY.md). In short: the server stores only your Minecraft UUID and the ids of the
 cosmetics you wear. Your Minecraft login token never leaves your computer.
+
+## License
+
+The **code** is under the [MIT License](LICENSE). The **cosmetics, textures, icons and the HtzCosmetics name**
+are All Rights Reserved: you may include the unmodified mod in modpacks, but not reuse the assets elsewhere.
+See [LICENSE](LICENSE).

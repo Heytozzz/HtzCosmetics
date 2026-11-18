@@ -12,7 +12,7 @@
     "sources": "https://github.com/Heytozzz/HtzCosmetics",
     "issues": "https://github.com/Heytozzz/HtzCosmetics/issues"
   },
-  "license": "All-Rights-Reserved",
+  "license": ["MIT", "LicenseRef-All-Rights-Reserved-Assets"],
   "icon": "assets/htzcosmetics/icon.png",
   "environment": "client",
   "entrypoints": {
