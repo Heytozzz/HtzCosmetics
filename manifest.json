@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "manifestVersion": 1795036804,
-  "expiresAt": 1810588804,
+  "manifestVersion": 1795040707,
+  "expiresAt": 1810592707,
   "cosmetics": [
     {
       "id": "angel_halo",
@@ -13,7 +13,7 @@
       "category": "HEAD",
       "rarity": "EPIC",
       "anchor": "HEAD",
-      "minFormat": 1,
+      "minFormat": 2,
       "model": {
         "sha256": "909dbffefcfba421e166bdd6e026f2531842524b2f10f801a9e90c14526686bc",
         "size": 1149
@@ -21,6 +21,44 @@
       "texture": {
         "sha256": "5f9062f4a7a76f0baf9b83d3a7b119f4f4540fa92ef8ec8605168b83432b9799",
         "size": 591
+      },
+      "glow": {
+        "colors": [
+          "#FFD24A"
+        ],
+        "cycle": 4,
+        "emissive": true,
+        "bloom": 0.67,
+        "radius": 1,
+        "pulse": 2
+      }
+    },
+    {
+      "id": "purple_aura",
+      "name": {
+        "en_us": "Purple Aura",
+        "es_es": "Aura Morada",
+        "es_mx": "Aura Morada"
+      },
+      "category": "AURA",
+      "rarity": "EPIC",
+      "anchor": "BODY",
+      "minFormat": 2,
+      "glow": {
+        "colors": [
+          "#9900FF",
+          "#9900FF"
+        ],
+        "cycle": 4,
+        "emissive": true,
+        "bloom": 1,
+        "radius": 4.5,
+        "pulse": 0
+      },
+      "aura": {
+        "outline": 0.05,
+        "outlineStrength": 0.9,
+        "fill": 0.05
       }
     },
     {
@@ -46,8 +84,9 @@
         "pulse": 0
       },
       "aura": {
-        "fill": 0.05,
-        "outline": 0.05
+        "outline": 0.05,
+        "outlineStrength": 0.9,
+        "fill": 0.05
       }
     },
     {
