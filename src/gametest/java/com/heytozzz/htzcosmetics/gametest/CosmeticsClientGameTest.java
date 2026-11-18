@@ -124,6 +124,8 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
                 context.runOnClient(mc -> OwnCosmetics.equip(CosmeticLibrary.get().definition("top_hat")));
             }
 
+            shaderShots(context, hasHalo);
+
             context.runOnClient(mc -> {
                 mc.player.setXRot(10);
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
@@ -262,6 +264,65 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
      * Compatibility run (gradlew :1.21.8-fabric:runClientGameTest -PhtzCompat): enables the resource packs found in
      * devmods/resourcepacks (e.g. Fresh Animations) before the world is created.
      */
+    /**
+     * Compatibility test only (-PhtzCompat with Iris and a shader pack in devmods/shaderpacks): turns shaders on,
+     * takes screenshots of the cosmetics and turns them off again. Iris is reached by reflection because it is
+     * not a compile dependency; this is test code and never ships in the mod.
+     */
+    private static void shaderShots(ClientGameTestContext context, boolean hasHalo) {
+        String dir = System.getProperty("htzcosmetics.test.shaderpacks");
+        if (dir == null || dir.isBlank() || !net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")) return;
+        String pack = context.computeOnClient(mc -> {
+            try (var files = java.nio.file.Files.list(java.nio.file.Path.of(dir))) {
+                java.nio.file.Path zip = files.filter(f -> f.toString().endsWith(".zip")).sorted().findFirst().orElse(null);
+                if (zip == null) return null;
+                Class<?> iris = Class.forName("net.irisshaders.iris.Iris");
+                java.nio.file.Path target = (java.nio.file.Path) iris.getMethod("getShaderpacksDirectory").invoke(null);
+                java.nio.file.Files.createDirectories(target);
+                java.nio.file.Files.copy(zip, target.resolve(zip.getFileName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                setShaders(zip.getFileName().toString(), true);
+                return zip.getFileName().toString();
+            } catch (Exception e) {
+                throw new AssertionError("could not enable shaders", e);
+            }
+        });
+        if (pack == null) return;
+        context.waitTicks(40);
+        System.out.println("[htz-gametest] shaders on: " + pack);
+        context.runOnClient(mc -> {
+            mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+            mc.player.setXRot(0);
+        });
+        context.waitTicks(20);
+        context.takeScreenshot("htz_shaders_front");
+        if (hasHalo) {
+            context.runOnClient(mc -> {
+                OwnCosmetics.equip(CosmeticLibrary.get().definition("angel_halo"));
+                mc.player.setXRot(15);
+            });
+            context.waitTicks(10);
+            context.takeScreenshot("htz_shaders_halo");
+            context.runOnClient(mc -> OwnCosmetics.equip(CosmeticLibrary.get().definition("top_hat")));
+        }
+        context.runOnClient(mc -> {
+            try {
+                setShaders(pack, false);
+            } catch (Exception e) {
+                throw new AssertionError("could not disable shaders", e);
+            }
+        });
+        context.waitTicks(20);
+    }
+
+    private static void setShaders(String pack, boolean enabled) throws Exception {
+        Class<?> iris = Class.forName("net.irisshaders.iris.Iris");
+        Object config = iris.getMethod("getIrisConfig").invoke(null);
+        config.getClass().getMethod("setShaderPackName", String.class).invoke(config, pack);
+        config.getClass().getMethod("setShadersEnabled", boolean.class).invoke(config, enabled);
+        config.getClass().getMethod("save").invoke(config);
+        iris.getMethod("reload").invoke(null);
+    }
+
     private static void enableCompatPacks(ClientGameTestContext context) {
         String dir = System.getProperty("htzcosmetics.test.packs");
         if (dir == null || dir.isBlank()) return;

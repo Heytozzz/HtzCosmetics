@@ -60,6 +60,8 @@ dependencies {
     //   gradlew :1.21.8-fabric:runClientGameTest -PhtzCompat
     if (providers.gradleProperty("htzCompat").isPresent) {
         modLocalRuntime(fileTree(rootProject.file("devmods/mods")) { include("*.jar") })
+        // Plain libraries those mods normally carry inside their jar (e.g. Iris' shader compiler).
+        localRuntime(fileTree(rootProject.file("devmods/libs")) { include("*.jar") })
     }
 
     // Unit tests (JUnit). Only used when running tests, never shipped in the mod.
@@ -92,6 +94,8 @@ loom {
             // Resource packs to enable during the compatibility test (e.g. Fresh Animations).
             @Suppress("DEPRECATION")
             property("htzcosmetics.test.packs", rootProject.file("devmods/resourcepacks").absolutePath)
+            @Suppress("DEPRECATION")
+            property("htzcosmetics.test.shaderpacks", rootProject.file("devmods/shaderpacks").absolutePath)
         }
     }
 }

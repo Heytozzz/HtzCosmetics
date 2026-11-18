@@ -7,7 +7,13 @@
   "authors": [
     "heytozzz"
   ],
+  "contact": {
+    "homepage": "https://github.com/Heytozzz/HtzCosmetics",
+    "sources": "https://github.com/Heytozzz/HtzCosmetics",
+    "issues": "https://github.com/Heytozzz/HtzCosmetics/issues"
+  },
   "license": "All-Rights-Reserved",
+  "icon": "assets/htzcosmetics/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
