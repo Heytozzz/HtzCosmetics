@@ -4,6 +4,7 @@ import com.heytozzz.htzcosmetics.core.ValidationException;
 import com.heytozzz.htzcosmetics.core.json.Json;
 import com.heytozzz.htzcosmetics.core.json.StrictJsonParser;
 import com.heytozzz.htzcosmetics.core.manifest.Anchor;
+import com.heytozzz.htzcosmetics.core.manifest.Category;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -11,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,6 +26,11 @@ import java.util.Set;
  * <p>Converted: groups (bones), box-UV cubes, pivots, rotations, inflate, mirror, and animations named
  * idle / walk / sneak as plain keyframes (see {@link BbAnimationConverter}; Molang expressions are rejected).
  * Meshes and per-face UV are rejected with a clear message.
+ *
+ * <p><b>Clothing (several body parts):</b> name a top-level group after a body part ({@code head}, {@code body},
+ * {@code left_arm}, {@code right_arm}, {@code left_leg}, {@code right_leg}; Spanish names such as
+ * {@code brazo_izquierdo} also work) and everything inside it follows that part, e.g. the sleeves of a shirt move
+ * with the arms. Only parts the category allows are used this way; other groups follow the cosmetic's anchor.
  *
  * <p>Coordinate conversion (same as Blockbench's own Java entity export): Blockbench uses Y up and the
  * opposite X direction, so x and y are negated, z is kept; rotations around X and Y are negated.
@@ -45,7 +52,10 @@ public final class BbmodelConverter {
     }
 
     private final String label;
+    private final Anchor anchor;
+    private final Category category;
     private final double[] anchorPivot;
+    private boolean usesBoneAnchors;
     private final Map<String, Map<String, Object>> elementsByUuid = new HashMap<>();
     private final Map<String, Map<String, Object>> groupsByUuid = new HashMap<>();
     /** Blockbench group uuid -> our bone name (animations target groups by uuid). */
@@ -57,14 +67,24 @@ public final class BbmodelConverter {
     private int texWidth;
     private int texHeight;
 
-    private BbmodelConverter(String label, Anchor anchor) {
+    private BbmodelConverter(String label, Category category, Anchor anchor) {
         this.label = label;
+        this.category = category;
+        this.anchor = anchor;
         this.anchorPivot = anchorPivot(anchor);
     }
 
+    /** Single-part conversion: every group follows {@code anchor}. */
     public static Result convert(byte[] bbmodel, Anchor anchor, String label) {
+        return convert(bbmodel, null, anchor, label);
+    }
+
+    /**
+     * @param category if not null, top-level groups named after a body part this category allows follow that part
+     */
+    public static Result convert(byte[] bbmodel, Category category, Anchor anchor, String label) {
         try {
-            return new BbmodelConverter(label, anchor).run(bbmodel);
+            return new BbmodelConverter(label, category, anchor).run(bbmodel);
         } catch (ValidationException e) {
             throw new ToolException(label + ": " + e.getMessage());
         }
@@ -108,7 +128,8 @@ public final class BbmodelConverter {
                 Map<String, Object> el = elementsByUuid.get(uuid);
                 if (el != null) looseCubes.add(el);
             } else {
-                convertGroup(Json.asObject(node, "outliner node"), null, null);
+                Map<String, Object> group = Json.asObject(node, "outliner node");
+                convertGroup(group, null, null, partFor(group));
             }
         }
         if (!looseCubes.isEmpty()) {
@@ -120,7 +141,7 @@ public final class BbmodelConverter {
         if (bones.isEmpty()) throw new ToolException(label + ": the model has no visible cubes");
 
         Map<String, Object> model = new LinkedHashMap<>();
-        model.put("format", 1);
+        model.put("format", usesBoneAnchors ? 2 : 1); // format 1 when possible: readable by older mod builds
         Map<String, Object> texture = new LinkedHashMap<>();
         texture.put("width", texWidth);
         texture.put("height", texHeight);
@@ -129,6 +150,33 @@ public final class BbmodelConverter {
         List<Object> animations = BbAnimationConverter.convert(root, boneByGroupUuid, label, warnings);
         if (!animations.isEmpty()) model.put("animations", animations);
         return new Result(JsonWriter.toBytes(model), embeddedTexture(root), warnings);
+    }
+
+    /**
+     * Body part a top-level group follows when its name is a body part the category allows and differs from the
+     * cosmetic's own anchor; otherwise null (the group follows the cosmetic's anchor).
+     */
+    private Anchor partFor(Map<String, Object> node) throws ValidationException {
+        if (category == null) return null;
+        Map<String, Object> group = node;
+        if (!Json.has(node, "name") && Json.has(node, "uuid")) group = groupsByUuid.get(Json.asString(node.get("uuid"), "uuid", 64));
+        if (group == null || !Json.has(group, "name")) return null;
+        Anchor named = bodyPartNamed(Json.asString(group.get("name"), "name", 256));
+        return named != null && named != anchor && category.allows(named) ? named : null;
+    }
+
+    /** "left_arm", "LeftArm", "brazo izquierdo"... -> LEFT_ARM; null if the name is not a body part. */
+    static Anchor bodyPartNamed(String name) {
+        String n = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
+        return switch (n) {
+            case "head", "cabeza" -> Anchor.HEAD;
+            case "body", "torso", "cuerpo" -> Anchor.BODY;
+            case "leftarm", "brazoizquierdo", "brazoizq" -> Anchor.LEFT_ARM;
+            case "rightarm", "brazoderecho", "brazoder" -> Anchor.RIGHT_ARM;
+            case "leftleg", "piernaizquierda", "piernaizq" -> Anchor.LEFT_LEG;
+            case "rightleg", "piernaderecha", "piernader" -> Anchor.RIGHT_LEG;
+            default -> null;
+        };
     }
 
     private boolean hasChildren(Map<String, Object> bone) {
@@ -142,7 +190,8 @@ public final class BbmodelConverter {
      * @param parentName   name of the parent bone, or null for a root bone
      * @param parentOrigin parent pivot in Blockbench coordinates, or null (root: the anchor pivot)
      */
-    private void convertGroup(Map<String, Object> node, String parentName, double[] parentOrigin) throws ValidationException {
+    private void convertGroup(Map<String, Object> node, String parentName, double[] parentOrigin, Anchor part)
+        throws ValidationException {
         Map<String, Object> group = node;
         if (!Json.has(node, "name") && Json.has(node, "uuid")) {
             group = groupsByUuid.get(Json.asString(node.get("uuid"), "uuid", 64));
@@ -155,12 +204,17 @@ public final class BbmodelConverter {
 
         double[] origin = vec(group, "origin");
         double[] rotation = vec(group, "rotation");
-        double[] relative = sub(origin, parentOrigin == null ? anchorPivot : parentOrigin);
+        double[] relative = sub(origin, parentOrigin != null ? parentOrigin
+            : part != null ? anchorPivot(part) : anchorPivot);
         String name = uniqueName(Json.has(group, "name") ? Json.asString(group.get("name"), "name", 256) : "bone");
         String groupUuid = Json.has(node, "uuid") ? Json.asString(node.get("uuid"), "uuid", 64)
             : (Json.has(group, "uuid") ? Json.asString(group.get("uuid"), "uuid", 64) : null);
         if (groupUuid != null) boneByGroupUuid.put(groupUuid, name);
         Map<String, Object> bone = newBone(name, parentName, toJava(relative), toJavaRotation(rotation));
+        if (part != null) {
+            bone.put("anchor", part.name());
+            usesBoneAnchors = true;
+        }
 
         List<Object> children = Json.has(node, "children") ? Json.asArray(node.get("children"), "children") : List.of();
         List<Map<String, Object>> childGroups = new ArrayList<>();
@@ -172,7 +226,7 @@ public final class BbmodelConverter {
                 childGroups.add(Json.asObject(child, "group"));
             }
         }
-        for (Map<String, Object> child : childGroups) convertGroup(child, name, origin);
+        for (Map<String, Object> child : childGroups) convertGroup(child, name, origin, null);
     }
 
     @SuppressWarnings("unchecked")

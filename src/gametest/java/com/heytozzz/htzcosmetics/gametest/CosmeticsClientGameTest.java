@@ -126,6 +126,34 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
 
             shaderShots(context, hasHalo);
 
+            // New cosmetic types (only with -PhtzTestSite, which includes src/gametest/cosmetics):
+            // clothing on several body parts, a glowing crown with bloom, and an aura. Day and night shots.
+            boolean hasNewTypes = context.computeOnClient(mc -> CosmeticLibrary.get().definition("test_shirt") != null);
+            if (hasNewTypes) {
+                List<String> newTypes = List.of("test_shirt", "test_shoes", "test_glow_crown", "test_aura");
+                context.runOnClient(mc -> {
+                    for (String id : newTypes) OwnCosmetics.equip(CosmeticLibrary.get().definition(id));
+                    mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+                    mc.player.setXRot(0);
+                });
+                context.waitTicks(10);
+                check(context, mc -> newTypes.stream().allMatch(OwnCosmetics::isEquipped), "new cosmetic types can be worn together");
+                context.takeScreenshot("htz_new_types_day");
+                context.getInput().holdKey(o -> o.keyUp);
+                context.waitTicks(8);
+                context.takeScreenshot("htz_new_types_walk");
+                context.getInput().releaseKey(o -> o.keyUp);
+                world.getServer().runCommand("time set midnight");
+                context.waitTicks(20);
+                context.takeScreenshot("htz_new_types_night");
+                world.getServer().runCommand("time set noon");
+                context.runOnClient(mc -> {
+                    for (String id : newTypes) OwnCosmetics.unequip(id);
+                    OwnCosmetics.equip(CosmeticLibrary.get().definition("top_hat"));
+                });
+                context.waitTicks(5);
+            }
+
             context.runOnClient(mc -> {
                 mc.player.setXRot(10);
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
@@ -171,9 +199,12 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             context.waitTick();
             context.getInput().moveCursor(60 * guiScale, 0);
             context.waitTick();
+            context.getInput().moveCursor(0, 15 * guiScale); // and up/down tilts it
+            context.waitTick();
             context.getInput().releaseMouse(com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT);
             context.waitTicks(2);
             check(context, mc -> ((CosmeticsScreen) mc.screen).previewYaw() != 0, "dragging rotates the preview");
+            check(context, mc -> ((CosmeticsScreen) mc.screen).previewPitch() != 0, "dragging up/down tilts the preview");
             context.takeScreenshot("htz_preview_dragged");
             zoomAndMove(context, "world");
 
@@ -225,6 +256,16 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
     private static void zoomAndMove(ClientGameTestContext context, String where) {
         int[] center = context.computeOnClient(mc -> ((CosmeticsScreen) mc.screen).previewCenter());
         double scale = context.computeOnClient(mc -> mc.getWindow().getGuiScale());
+        // Zooming with the cursor right of / below the middle keeps that point under the cursor,
+        // so the view shifts left and up.
+        context.getInput().setCursorPos((center[0] + 30) * scale, (center[1] + 30) * scale);
+        context.getInput().scroll(2);
+        context.waitTicks(2);
+        check(context, mc -> {
+            float[] pan = ((CosmeticsScreen) mc.screen).previewPan();
+            return pan[0] < -5 && pan[1] < -5;
+        }, "wheel zooms towards the cursor (" + where + ")");
+        click(context, "preview:reset");
         context.getInput().setCursorPos(center[0] * scale, center[1] * scale);
         context.getInput().scroll(4);
         context.waitTicks(2);

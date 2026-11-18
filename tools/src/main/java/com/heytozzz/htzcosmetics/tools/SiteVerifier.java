@@ -4,6 +4,7 @@ import com.heytozzz.htzcosmetics.core.AssetCheck;
 import com.heytozzz.htzcosmetics.core.ValidationException;
 import com.heytozzz.htzcosmetics.core.crypto.SignatureVerifier;
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
+import com.heytozzz.htzcosmetics.core.model.ModelParser;
 import com.heytozzz.htzcosmetics.core.manifest.Manifest;
 import com.heytozzz.htzcosmetics.core.manifest.ManifestParser;
 
@@ -39,7 +40,8 @@ public final class SiteVerifier {
 
         for (CosmeticDefinition def : manifest.cosmetics()) {
             try {
-                AssetCheck.model(read(siteDir, def.model().sha256()), def.model());
+                if (!def.hasModel()) continue; // model-less aura
+                ModelParser.checkAnchors(AssetCheck.model(read(siteDir, def.model().sha256()), def.model()), def.category());
                 AssetCheck.texture(read(siteDir, def.texture().sha256()), def.texture());
             } catch (ValidationException | IOException e) {
                 problems.add(def.id() + ": " + e.getMessage());

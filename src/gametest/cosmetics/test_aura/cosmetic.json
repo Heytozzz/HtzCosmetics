@@ -1,0 +1,22 @@
+{
+  "name": {
+    "en_us": "Test aura",
+    "es_es": "Aura de prueba"
+  },
+  "category": "AURA",
+  "rarity": "EPIC",
+  "glow": {
+    "colors": [
+      "#40E0FF",
+      "#B040FF"
+    ],
+    "cycle": 3,
+    "bloom": 0.7,
+    "radius": 1.5,
+    "pulse": 2
+  },
+  "aura": {
+    "fill": 0.25,
+    "outline": 0.6
+  }
+}

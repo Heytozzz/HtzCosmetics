@@ -10,14 +10,14 @@ import java.util.List;
 
 /** Wardrobe preview: the player model with the account's skin and worn cosmetics. */
 public record PlayerPreviewRenderState(PlayerModel model, ResourceLocation skin, List<BakedCosmetic> cosmetics,
-                                       float yawDegrees, float seconds, float zoom, float panX, float panY,
+                                       float yawDegrees, float pitchDegrees, float seconds, float zoom, float panX, float panY,
                                        int x0, int y0, int x1, int y1, ScreenRectangle scissorArea, ScreenRectangle bounds)
     implements PictureInPictureRenderState {
 
     public static PlayerPreviewRenderState of(PlayerModel model, ResourceLocation skin, List<BakedCosmetic> cosmetics,
-                                              float yaw, float seconds, float zoom, float panX, float panY,
+                                              float yaw, float pitch, float seconds, float zoom, float panX, float panY,
                                               int x0, int y0, int x1, int y1, ScreenRectangle scissor) {
-        return new PlayerPreviewRenderState(model, skin, List.copyOf(cosmetics), yaw, seconds, zoom, panX, panY,
+        return new PlayerPreviewRenderState(model, skin, List.copyOf(cosmetics), yaw, pitch, seconds, zoom, panX, panY,
             x0, y0, x1, y1, scissor,
             PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissor));
     }

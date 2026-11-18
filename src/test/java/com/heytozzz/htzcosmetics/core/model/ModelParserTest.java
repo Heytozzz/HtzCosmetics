@@ -85,7 +85,7 @@ class ModelParserTest {
     @Test
     void rejectsWrongFormatAndTexture() {
         String valid = model("{\"name\":\"a\",\"cubes\":[" + CUBE + "]}");
-        assertThrows(ValidationException.class, () -> parse(valid.replace("\"format\":1", "\"format\":2")));
+        assertThrows(ValidationException.class, () -> parse(valid.replace("\"format\":1", "\"format\":3")));
         assertThrows(ValidationException.class,
             () -> parse(model("{\"name\":\"a\",\"cubes\":[" + CUBE + "]}").replace("\"width\":64", "\"width\":100000")));
         assertThrows(ValidationException.class, () -> parse(model("")));

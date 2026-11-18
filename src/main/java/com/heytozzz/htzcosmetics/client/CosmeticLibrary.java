@@ -1,6 +1,9 @@
 package com.heytozzz.htzcosmetics.client;
 
 import com.heytozzz.htzcosmetics.HtzCosmetics;
+import com.heytozzz.htzcosmetics.client.render.AuraModel;
+import com.heytozzz.htzcosmetics.core.manifest.Glow;
+import com.heytozzz.htzcosmetics.core.model.ModelParser;
 import com.heytozzz.htzcosmetics.client.render.BakedCosmetic;
 import com.heytozzz.htzcosmetics.client.render.CosmeticBaker;
 import com.heytozzz.htzcosmetics.core.source.CosmeticSource;
@@ -112,8 +115,13 @@ public final class CosmeticLibrary {
                 List<Prepared> prepared = new ArrayList<>();
                 for (CosmeticDefinition def : m.cosmetics()) {
                     try {
+                        if (!def.hasModel()) { // model-less aura: nothing to download
+                            prepared.add(new Prepared(def, null, null));
+                            continue;
+                        }
                         CosmeticModel model = AssetCheck.model(
                             source.asset(def.model().sha256(), def.model().size()), def.model());
+                        ModelParser.checkAnchors(model, def.category());
                         DecodedImage image = AssetCheck.texture(
                             source.asset(def.texture().sha256(), def.texture().size()), def.texture());
                         prepared.add(new Prepared(def, model, image));
@@ -139,7 +147,17 @@ public final class CosmeticLibrary {
 
         for (Prepared p : prepared) {
             try {
-                String sha = p.definition().texture().sha256();
+                CosmeticDefinition def = p.definition();
+                Glow glow = def.glow();
+                double bloomRadius = glow != null && glow.bloom() > 0 ? glow.radius() : 0;
+                AuraModel.Geometry aura = def.aura() != null ? AuraModel.build(def.aura().outline(), bloomRadius) : null;
+                if (p.model() == null) {
+                    // Framed like a player: about 32 pixels tall around the body's middle.
+                    next.put(def.id(), new BakedCosmetic(def, null, List.of(), List.of(), null, false,
+                        new float[]{0, 8, 0}, 34, aura));
+                    continue;
+                }
+                String sha = def.texture().sha256();
                 ResourceLocation location = uploadedBySha.get(sha);
                 if (location == null) {
                     location = ResourceLocation.fromNamespaceAndPath(HtzCosmetics.MOD_ID, "cosmetic/" + sha);
@@ -148,9 +166,9 @@ public final class CosmeticLibrary {
                     uploadedBySha.put(sha, location);
                     translucentByTexture.put(location, hasPartialAlpha(p.image()));
                 }
-                CosmeticBaker.Baked model = CosmeticBaker.bake(p.model());
-                next.put(p.definition().id(), new BakedCosmetic(p.definition(), model.root(), model.bones(),
-                    p.model().animations(), location, translucentByTexture.get(location), model.center(), model.size()));
+                CosmeticBaker.Baked model = CosmeticBaker.bake(p.model(), def.anchor(), bloomRadius);
+                next.put(def.id(), new BakedCosmetic(def, model.main(), model.bloom(), p.model().animations(), location,
+                    translucentByTexture.get(location), model.center(), model.size(), aura));
             } catch (Exception e) {
                 HtzCosmetics.LOGGER.warn("Ignoring cosmetic '{}': {}", p.definition().id(), e.toString());
             }

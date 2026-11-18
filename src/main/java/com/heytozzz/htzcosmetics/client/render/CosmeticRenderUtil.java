@@ -1,18 +1,49 @@
 package com.heytozzz.htzcosmetics.client.render;
 
+import com.heytozzz.htzcosmetics.HtzCosmetics;
 import com.heytozzz.htzcosmetics.core.manifest.Anchor;
+import com.heytozzz.htzcosmetics.core.manifest.Aura;
+import com.heytozzz.htzcosmetics.core.manifest.Glow;
 import com.heytozzz.htzcosmetics.core.model.AnimationClip;
+import com.heytozzz.htzcosmetics.mixin.ModelPartAccessor;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
-/** Shared drawing helpers for cosmetics outside the normal player render layer (menu thumbnails and preview). */
+/**
+ * Draws cosmetics: on players in the world, on the wardrobe preview and on menu thumbnails.
+ *
+ * <p>Glow: an emissive cosmetic is drawn at full brightness with an emissive render type (shader packs such as
+ * Complementary also give it their own bloom). Bloom is drawn as a few slightly bigger copies of the model in the
+ * glow colour, see-through and without depth writes, so it works without shaders too. Auras draw the same kind of layers around the
+ * player's body parts, plus an outline made by drawing a slightly bigger box inside out (only its far side shows,
+ * as a rim around the body).
+ */
 public final class CosmeticRenderUtil {
+    private static final ResourceLocation WHITE = ResourceLocation.fromNamespaceAndPath(HtzCosmetics.MOD_ID, "textures/misc/white.png");
+    /**
+     * Brightness of each bloom layer, from the innermost (strongest) outwards. Layers add up (front and back faces
+     * too), so these stay low: at "bloom": 1 the brightest spot reaches about the glow colour, not white.
+     */
+    private static final float[] BLOOM_FALLOFF = {0.38F, 0.22F, 0.11F};
+    /** The aura's fill is drawn on both sides of each box, so each side gets half. */
+    private static final float FILL_FACTOR = 0.3F;
+    /** Aura bloom layers cover the whole body (front included), so they are fainter than a cosmetic's bloom. */
+    private static final float AURA_BLOOM_FACTOR = 0.3F;
+    private static final int FULL_BRIGHT = LightTexture.FULL_BRIGHT;
+    private static final int SILHOUETTE = 0xFF2A2D3A;
+    private static RenderType additive;
+    private static RenderType outline;
+
     private CosmeticRenderUtil() {
     }
 
@@ -23,6 +54,12 @@ public final class CosmeticRenderUtil {
     @FunctionalInterface
     public interface GeometrySink {
         void draw(PoseStack pose, RenderType type, BiConsumer<PoseStack, VertexConsumer> body);
+    }
+
+    /** Moves {@code pose} onto a body part; returns false if that part is hidden (then nothing is drawn on it). */
+    @FunctionalInterface
+    public interface AnchorPoser {
+        boolean apply(PoseStack pose, Anchor anchor);
     }
 
     /** The body part of {@code model} a cosmetic is attached to. */
@@ -37,21 +74,119 @@ public final class CosmeticRenderUtil {
         };
     }
 
-    /** Draws the cosmetic alone with its idle animation at {@code seconds}. */
-    public static void drawIdle(BakedCosmetic c, PoseStack pose, GeometrySink sink, float seconds, int light, int overlay) {
-        sink.draw(pose, renderType(c), (p, vertices) -> {
-            CosmeticAnimator.poseAt(c, seconds, AnimationClip.Trigger.IDLE);
-            c.root().render(p, vertices, light, overlay);
-        });
+    /** Follows the posed parts of {@code model}, including what animation mods do to them. */
+    public static AnchorPoser onModel(PlayerModel model) {
+        return (pose, anchor) -> {
+            ModelPart part = anchorPart(model, anchor);
+            if (!part.visible) return false;
+            AnchorTransform.apply(pose, model.root(), part);
+            return true;
+        };
     }
 
-    /** Draws the cosmetic attached to its body part of a posed {@code model} (idle animation). */
+    /** True if the model has slim (3 pixel) arms; animation mods that hide the vanilla box count as wide. */
+    public static boolean slimArms(PlayerModel model) {
+        List<ModelPart.Cube> cubes = ((ModelPartAccessor) (Object) model.rightArm).htzcosmetics$cubes();
+        return !cubes.isEmpty() && cubes.get(0).maxX - cubes.get(0).minX < 3.5F;
+    }
+
+    /**
+     * Draws one cosmetic: its pieces (each on its own body part), its glow, and its aura.
+     *
+     * @param silhouette draw a plain body under an aura (thumbnails, where no player is drawn)
+     */
+    public static void draw(BakedCosmetic c, PoseStack pose, AnchorPoser poser, GeometrySink sink, float seconds,
+                            AnimationClip.Trigger trigger, int light, int overlay, boolean slim, boolean silhouette) {
+        Glow glow = c.definition().glow();
+        if (c.main() != null) drawModel(c, glow, pose, poser, sink, seconds, trigger, light, overlay);
+        if (c.aura() != null && glow != null) {
+            drawAura(c.aura().forArms(slim), c.definition().aura(), glow, pose, poser, sink, seconds, silhouette);
+        }
+    }
+
+    private static void drawModel(BakedCosmetic c, Glow glow, PoseStack pose, AnchorPoser poser, GeometrySink sink,
+                                  float seconds, AnimationClip.Trigger trigger, int light, int overlay) {
+        boolean emissive = glow != null && glow.emissive();
+        RenderType type = emissive ? emissive(c.texture()) : renderType(c);
+        int mainLight = emissive ? FULL_BRIGHT : light;
+        List<CosmeticBaker.Piece> pieces = c.main().pieces();
+        for (int i = 0; i < pieces.size(); i++) {
+            CosmeticBaker.Piece piece = pieces.get(i);
+            pose.pushPose();
+            if (poser.apply(pose, piece.anchor())) {
+                ModelPart root = piece.root();
+                sink.draw(pose, type, (p, vertices) -> {
+                    CosmeticAnimator.poseAt(c, seconds, trigger);
+                    root.render(p, vertices, mainLight, overlay);
+                });
+                for (int k = 0; k < c.bloom().size(); k++) {
+                    CosmeticBaker.Tree layer = c.bloom().get(k);
+                    ModelPart layerRoot = layer.pieces().get(i).root();
+                    int color = glowColor(glow, seconds, glow.bloom() * BLOOM_FALLOFF[k]);
+                    sink.draw(pose, additive(), (p, vertices) -> {
+                        CosmeticAnimator.poseAt(c, seconds, trigger);
+                        CosmeticAnimator.copyPose(c.bones(), layer.bones());
+                        layerRoot.render(p, vertices, FULL_BRIGHT, OverlayTexture.NO_OVERLAY, color);
+                    });
+                }
+            }
+            pose.popPose();
+        }
+    }
+
+    private static void drawAura(Map<Anchor, AuraModel.Shells> shells, Aura aura, Glow glow, PoseStack pose,
+                                 AnchorPoser poser, GeometrySink sink, float seconds, boolean silhouette) {
+        int fill = glowColor(glow, seconds, aura.fill() * FILL_FACTOR);
+        int solid = 0xFF000000 | glow.colorAt(seconds);
+        for (Anchor anchor : Anchor.values()) {
+            AuraModel.Shells s = shells.get(anchor);
+            pose.pushPose();
+            if (poser.apply(pose, anchor)) {
+                AuraModel.Box b = s.box();
+                pose.translate(b.cx() / 16.0F, b.cy() / 16.0F, b.cz() / 16.0F);
+                if (silhouette) drawPart(sink, pose, cutout(WHITE), s.base(), SILHOUETTE);
+                if (aura.fill() > 0) drawPart(sink, pose, additive(), s.fill(), fill);
+                for (int k = 0; k < s.bloom().length; k++) {
+                    drawPart(sink, pose, additive(), s.bloom()[k],
+                        glowColor(glow, seconds, glow.bloom() * BLOOM_FALLOFF[k] * AURA_BLOOM_FACTOR));
+                }
+                if (s.outline() != null) {
+                    // Mirrored through its centre the box is drawn inside out: the near side is culled and only the
+                    // far side shows, as a rim around the body part.
+                    pose.pushPose();
+                    pose.scale(-1.0F, -1.0F, -1.0F);
+                    drawPart(sink, pose, outline(), s.outline(), solid);
+                    pose.popPose();
+                }
+            }
+            pose.popPose();
+        }
+    }
+
+    private static void drawPart(GeometrySink sink, PoseStack pose, RenderType type, ModelPart part, int color) {
+        sink.draw(pose, type, (p, vertices) -> part.render(p, vertices, FULL_BRIGHT, OverlayTexture.NO_OVERLAY, color));
+    }
+
+    /** Glow colour at {@code seconds}, with the breathing pulse and {@code strength} as its opacity. */
+    private static int glowColor(Glow glow, float seconds, double strength) {
+        double f = Math.max(0, Math.min(1, strength * glow.pulseAt(seconds)));
+        return (int) Math.round(f * 255) << 24 | glow.colorAt(seconds);
+    }
+
+    /** Draws the cosmetic alone with its idle animation at {@code seconds}, pieces laid out like on a player. */
+    public static void drawIdle(BakedCosmetic c, PoseStack pose, GeometrySink sink, float seconds, int light, int overlay) {
+        var anchor = c.definition().anchor();
+        draw(c, pose, (p, part) -> {
+            float[] o = CosmeticBaker.restOffset(part, anchor);
+            p.translate(o[0] / 16.0F, o[1] / 16.0F, o[2] / 16.0F);
+            return true;
+        }, sink, seconds, AnimationClip.Trigger.IDLE, light, overlay, false, true);
+    }
+
+    /** Draws the cosmetic attached to the body parts of a posed {@code model} (idle animation). */
     public static void drawOnModel(PlayerModel model, BakedCosmetic c, PoseStack pose, GeometrySink sink,
                                    float seconds, int light, int overlay) {
-        pose.pushPose();
-        AnchorTransform.apply(pose, model.root(), anchorPart(model, c.definition().anchor()));
-        drawIdle(c, pose, sink, seconds, light, overlay);
-        pose.popPose();
+        draw(c, pose, onModel(model), sink, seconds, AnimationClip.Trigger.IDLE, light, overlay, slimArms(model), false);
     }
 
     static RenderType renderType(BakedCosmetic c) {
@@ -76,5 +211,44 @@ public final class CosmeticRenderUtil {
         *///?} else {
         return RenderType.entityCutoutNoCull(texture);
         //?}
+    }
+
+    /** Full brightness, recognised as emissive by shader packs. */
+    private static RenderType emissive(ResourceLocation texture) {
+        //? if >=1.21.11 {
+        /*return net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucentEmissive(texture);
+        *///?} else {
+        return RenderType.entityTranslucentEmissive(texture);
+        //?}
+    }
+
+    /**
+     * See-through light at full brightness for bloom and aura light. It must NOT write depth: these layers surround
+     * other geometry (the cosmetic, clothing, the body), and with depth writes whatever happened to be drawn after
+     * them would be hidden inside.
+     */
+    private static RenderType additive() {
+        if (additive == null) {
+            //? if >=1.21.11 {
+            /*additive = net.minecraft.client.renderer.rendertype.RenderTypes.eyes(WHITE);
+            *///?} else {
+            additive = RenderType.eyes(WHITE);
+            //?}
+        }
+        return additive;
+    }
+
+    /** Opaque, back faces culled: needed for the inside-out outline. */
+    private static RenderType outline() {
+        if (outline == null) {
+            //? if >=26.1 {
+            /*outline = net.minecraft.client.renderer.rendertype.RenderTypes.entityCutoutCull(WHITE);
+            *///?} else if >=1.21.11 {
+            /*outline = net.minecraft.client.renderer.rendertype.RenderTypes.entityCutout(WHITE);
+            *///?} else {
+            outline = RenderType.entityCutout(WHITE);
+            //?}
+        }
+        return outline;
     }
 }

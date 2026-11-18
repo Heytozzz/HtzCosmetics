@@ -59,7 +59,7 @@ class ManifestParserTest {
             validCosmetic("UPPER"),                                      // id charset
             validCosmetic("a".repeat(33)),                               // id too long
             validCosmetic("ok"),                                         // duplicate id
-            cosmetic("future", "HEAD", "HEAD", "RARE", 2, ""),          // needs newer mod
+            cosmetic("future", "HEAD", "HEAD", "RARE", 3, ""),          // needs newer mod
             cosmetic("pet", "PET", "BODY", "RARE", 1, ""),               // unknown category
             cosmetic("aura", "HEAD", "HEAD", "MYTHIC", 1, ""),           // unknown rarity
             cosmetic("wrong", "HEAD", "LEFT_LEG", "RARE", 1, ""),        // anchor not allowed for category

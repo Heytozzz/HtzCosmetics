@@ -6,6 +6,8 @@ import com.heytozzz.htzcosmetics.core.crypto.Hashes;
 import com.heytozzz.htzcosmetics.core.json.Json;
 import com.heytozzz.htzcosmetics.core.json.StrictJsonParser;
 import com.heytozzz.htzcosmetics.core.manifest.Anchor;
+import com.heytozzz.htzcosmetics.core.manifest.Aura;
+import com.heytozzz.htzcosmetics.core.manifest.Glow;
 import com.heytozzz.htzcosmetics.core.manifest.Category;
 import com.heytozzz.htzcosmetics.core.manifest.Manifest;
 import com.heytozzz.htzcosmetics.core.manifest.ManifestParser;
@@ -31,7 +33,7 @@ import java.util.stream.Stream;
 /**
  * Turns the owner's {@code cosmetics/} folder into a signed, static {@code site/} folder ready for GitHub Pages:
  * <pre>
- * cosmetics/top_hat/cosmetic.json   names, category, rarity, (anchor)
+ * cosmetics/top_hat/cosmetic.json   names, category, rarity, (anchor), (glow), (aura)
  * cosmetics/top_hat/model.bbmodel   Blockbench model (or model.json already in htzmodel format)
  * cosmetics/top_hat/texture.png     optional if the texture is embedded in the .bbmodel
  *   →
@@ -154,14 +156,26 @@ public final class SiteBuilder {
         Rarity rarity;
         Anchor anchor;
         Map<String, Object> names;
+        Glow glow = null;
+        Aura aura = null;
         try {
             info = Json.asObject(StrictJsonParser.parse(Files.readAllBytes(infoFile), 64 * 1024), "cosmetic.json");
             category = parseEnum(Category.values(), Json.string(info, "category", 32), label, "category");
             rarity = parseEnum(Rarity.values(), Json.string(info, "rarity", 32), label, "rarity");
             anchor = Json.has(info, "anchor")
                 ? parseEnum(Anchor.values(), Json.string(info, "anchor", 32), label, "anchor")
-                : (category == Category.HEAD ? Anchor.HEAD : Anchor.BODY);
+                : category.defaultAnchor();
             names = Json.object(info, "name");
+            if (Json.has(info, "glow")) {
+                glow = Glow.parse(Json.object(info, "glow")); // same rules as the mod, with its exact message
+            }
+            if (Json.has(info, "aura")) {
+                if (!category.isAura()) throw new ValidationException("\"aura\" is only for the AURA category");
+                aura = Aura.parse(Json.object(info, "aura"));
+            }
+            if (category.isAura() && glow == null) {
+                throw new ValidationException("AURA cosmetics need a \"glow\" block (its colours colour the aura)");
+            }
         } catch (ValidationException e) {
             throw new ToolException(label + "/cosmetic.json: " + e.getMessage());
         }
@@ -173,13 +187,68 @@ public final class SiteBuilder {
         // --- Model ---
         Path bbmodel = folder.resolve("model.bbmodel");
         Path htzmodel = folder.resolve("model.json");
-        if (Files.exists(bbmodel) == Files.exists(htzmodel)) {
-            throw new ToolException(label + ": needs exactly one of model.bbmodel or model.json");
+        if (Files.exists(bbmodel) && Files.exists(htzmodel)) {
+            throw new ToolException(label + ": needs only one of model.bbmodel or model.json");
         }
+        boolean withModel = Files.exists(bbmodel) || Files.exists(htzmodel);
+        if (!withModel && !category.isAura()) {
+            throw new ToolException(label + ": needs model.bbmodel (or model.json)");
+        }
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("id", id);
+        entry.put("name", names);
+        entry.put("category", category.name());
+        entry.put("rarity", rarity.name());
+        entry.put("anchor", anchor.name());
+        boolean newFormat = !category.inFormat1() || glow != null || aura != null;
+        if (withModel) newFormat |= addModel(label, folder, category, anchor, entry, assets, warnings);
+        entry.put("minFormat", newFormat ? 2 : 1); // 2 = older mod builds skip it instead of misreading it
+        if (glow != null) entry.put("glow", glowJson(glow));
+        if (category.isAura()) {
+            Aura a = aura != null ? aura : new Aura(0.2, 0.5);
+            Map<String, Object> auraJson = new LinkedHashMap<>();
+            auraJson.put("fill", a.fill());
+            auraJson.put("outline", a.outline());
+            entry.put("aura", auraJson);
+        }
+        // Keep a stable key order: id, name, category, rarity, anchor, minFormat, model, texture, glow, aura.
+        Map<String, Object> ordered = new LinkedHashMap<>();
+        for (String k : List.of("id", "name", "category", "rarity", "anchor", "minFormat", "model", "texture", "glow", "aura")) {
+            if (entry.containsKey(k)) ordered.put(k, entry.get(k));
+        }
+        entry = ordered;
+
+        // Check this single entry with the mod's own rules for a precise error message.
+        Map<String, Object> single = new LinkedHashMap<>();
+        single.put("format", 1);
+        single.put("manifestVersion", 1);
+        single.put("expiresAt", 32_000_000_000L);
+        single.put("cosmetics", List.of(entry));
+        try {
+            if (ManifestParser.parseUnverified(JsonWriter.toBytes(single)).skippedEntries() != 0) {
+                throw new ToolException(label + ": rejected by the mod rules. Check the names: language codes like "
+                    + "en_us / es_es, max " + Limits.MAX_NAME_LENGTH + " characters, no § or invisible characters.");
+            }
+        } catch (ValidationException e) {
+            throw new ToolException(label + ": " + e.getMessage());
+        }
+        return entry;
+    }
+
+    /**
+     * Converts and checks the model and texture and adds them to {@code entry}.
+     *
+     * @return true if the model needs content format 2 (groups following several body parts)
+     */
+    private static boolean addModel(String label, Path folder, Category category, Anchor anchor,
+                                    Map<String, Object> entry, Map<String, Asset> assets, List<String> warnings)
+        throws IOException {
+        Path bbmodel = folder.resolve("model.bbmodel");
+        Path htzmodel = folder.resolve("model.json");
         byte[] modelBytes;
         byte[] embeddedTexture = null;
         if (Files.exists(bbmodel)) {
-            BbmodelConverter.Result r = BbmodelConverter.convert(Files.readAllBytes(bbmodel), anchor, label);
+            BbmodelConverter.Result r = BbmodelConverter.convert(Files.readAllBytes(bbmodel), category, anchor, label);
             modelBytes = r.modelJson();
             embeddedTexture = r.embeddedTexture();
             for (String w : r.warnings()) warnings.add(label + ": " + w);
@@ -189,6 +258,7 @@ public final class SiteBuilder {
         CosmeticModel model;
         try {
             model = ModelParser.parse(modelBytes);
+            ModelParser.checkAnchors(model, category);
         } catch (ValidationException e) {
             throw new ToolException(label + ": model rejected by the mod rules: " + e.getMessage()
                 + "\n  (limits: " + Limits.MAX_BONES + " groups, " + Limits.MAX_CUBES + " cubes, cubes within "
@@ -212,31 +282,23 @@ public final class SiteBuilder {
                 + " but the model expects " + model.textureWidth() + "x" + model.textureHeight() + " (or an exact multiple)");
         }
 
-        Map<String, Object> entry = new LinkedHashMap<>();
-        entry.put("id", id);
-        entry.put("name", names);
-        entry.put("category", category.name());
-        entry.put("rarity", rarity.name());
-        entry.put("anchor", anchor.name());
-        entry.put("minFormat", 1);
         entry.put("model", assetRef(modelBytes, assets));
         entry.put("texture", assetRef(texture, assets));
+        return model.format() >= 2;
+    }
 
-        // Check this single entry with the mod's own rules for a precise error message.
-        Map<String, Object> single = new LinkedHashMap<>();
-        single.put("format", 1);
-        single.put("manifestVersion", 1);
-        single.put("expiresAt", 32_000_000_000L);
-        single.put("cosmetics", List.of(entry));
-        try {
-            if (ManifestParser.parseUnverified(JsonWriter.toBytes(single)).skippedEntries() != 0) {
-                throw new ToolException(label + ": rejected by the mod rules. Check the names: language codes like "
-                    + "en_us / es_es, max " + Limits.MAX_NAME_LENGTH + " characters, no § or invisible characters.");
-            }
-        } catch (ValidationException e) {
-            throw new ToolException(label + ": " + e.getMessage());
-        }
-        return entry;
+    /** Only the known, validated fields (in a fixed order) go into the signed manifest. */
+    private static Map<String, Object> glowJson(Glow g) {
+        List<String> colors = new ArrayList<>();
+        for (int c : g.colors()) colors.add(String.format("#%06X", c));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("colors", colors);
+        out.put("cycle", g.cycle());
+        out.put("emissive", g.emissive());
+        out.put("bloom", g.bloom());
+        out.put("radius", g.radius());
+        out.put("pulse", g.pulse());
+        return out;
     }
 
     private static Map<String, Object> assetRef(byte[] bytes, Map<String, Asset> assets) {

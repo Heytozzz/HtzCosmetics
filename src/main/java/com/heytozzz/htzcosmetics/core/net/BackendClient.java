@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 /** Talks to the HtzCosmetics backend. All responses are untrusted and strictly validated. */
 public final class BackendClient {
     public static final int MAX_BATCH = 100;
-    public static final int MAX_EQUIPPED = 8;
+    public static final int MAX_EQUIPPED = 10; // one per category (keep equal to the backend)
     private static final int MAX_RESPONSE_BYTES = 128 * 1024;
     private static final Pattern ID = Pattern.compile("[a-z0-9_]{1,32}");
 

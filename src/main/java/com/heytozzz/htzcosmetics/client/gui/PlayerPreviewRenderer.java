@@ -37,7 +37,7 @@ public final class PlayerPreviewRenderer extends HtzPipRenderer<PlayerPreviewRen
 
     @Override
     protected Lighting.Entry lighting() {
-        return Lighting.Entry.ENTITY_IN_UI;
+        return Lighting.Entry.PLAYER_SKIN; // same light as the vanilla skin customisation preview
     }
 
     @Override
@@ -49,6 +49,7 @@ public final class PlayerPreviewRenderer extends HtzPipRenderer<PlayerPreviewRen
         pose.pushPose();
         pose.translate(state.panX(), state.panY(), 0.0F);
         pose.scale(k * 16.0F, k * 16.0F, -k * 16.0F);
+        pose.mulPose(Axis.XP.rotationDegrees(state.pitchDegrees())); // tilt towards / away from the viewer
         pose.mulPose(Axis.YP.rotationDegrees(180.0F + state.yawDegrees()));
         pose.translate(0.0F, -(TOP + BOTTOM) / 2.0F / 16.0F, 0.0F);
 

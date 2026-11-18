@@ -87,9 +87,12 @@ loom {
         property("htzcosmetics.devSite", rootProject.file("site").absolutePath)
     }
     // The in-game test inherits the client settings: blank the dev folder so it downloads from GitHub Pages.
+    // -PhtzTestSite=<folder> instead loads a locally built, signed site (e.g. with the test cosmetics of
+    // src/gametest/cosmetics), so unpublished cosmetic types can be tested.
     runConfigs.matching { it.name == "clientGameTest" }.configureEach {
         @Suppress("DEPRECATION")
-        property("htzcosmetics.devSite", "")
+        property("htzcosmetics.devSite",
+            providers.gradleProperty("htzTestSite").map { rootProject.file(it).absolutePath }.getOrElse(""))
         if (providers.gradleProperty("htzCompat").isPresent) {
             // Resource packs to enable during the compatibility test (e.g. Fresh Animations).
             @Suppress("DEPRECATION")

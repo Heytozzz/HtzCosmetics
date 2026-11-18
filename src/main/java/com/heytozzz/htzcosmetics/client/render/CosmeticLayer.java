@@ -10,7 +10,6 @@ import com.heytozzz.htzcosmetics.core.model.AnimationClip;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
@@ -37,36 +36,25 @@ public final class CosmeticLayer extends RenderLayer<PlayerRenderState, PlayerMo
         super(parent);
     }
 
-    /** Draws (or submits) one cosmetic whose anchor transform is already on {@code pose}. */
-    @FunctionalInterface
-    private interface Drawer {
-        void draw(BakedCosmetic cosmetic, PoseStack pose, int overlay, float seconds, AnimationClip.Trigger trigger);
-    }
-
     //? if >=1.21.9 {
     /*@Override
     public void submit(PoseStack pose, SubmitNodeCollector collector, int packedLight, PlayerRenderState state,
                        float yRot, float xRot) {
-        forEachCosmetic(pose, state, (c, p, overlay, seconds, trigger) ->
-            collector.submitCustomGeometry(p, CosmeticRenderUtil.renderType(c), (entry, vertices) -> {
-                PoseStack drawPose = new PoseStack();
-                drawPose.last().set(entry);
-                CosmeticAnimator.poseAt(c, seconds, trigger);
-                c.root().render(drawPose, vertices, packedLight, overlay);
-            }));
+        forEachCosmetic(pose, state, packedLight, (p, type, body) -> collector.submitCustomGeometry(p, type, (entry, vertices) -> {
+            PoseStack drawPose = new PoseStack();
+            drawPose.last().set(entry);
+            body.accept(drawPose, vertices);
+        }));
     }
     *///?} else {
     @Override
     public void render(PoseStack pose, MultiBufferSource buffers, int packedLight, PlayerRenderState state,
                        float yRot, float xRot) {
-        forEachCosmetic(pose, state, (c, p, overlay, seconds, trigger) -> {
-            CosmeticAnimator.poseAt(c, seconds, trigger);
-            c.root().render(p, buffers.getBuffer(CosmeticRenderUtil.renderType(c)), packedLight, overlay);
-        });
+        forEachCosmetic(pose, state, packedLight, (p, type, body) -> body.accept(p, buffers.getBuffer(type)));
     }
     //?}
 
-    private void forEachCosmetic(PoseStack pose, PlayerRenderState state, Drawer drawer) {
+    private void forEachCosmetic(PoseStack pose, PlayerRenderState state, int light, CosmeticRenderUtil.GeometrySink sink) {
         if (state.isInvisible || state.isSpectator) return;
         UUID uuid = ((PlayerUuidAccess) state).htzcosmetics$getUuid();
         if (uuid == null || !visibleByOptions(uuid)) return;
@@ -77,18 +65,14 @@ public final class CosmeticLayer extends RenderLayer<PlayerRenderState, PlayerMo
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
         float seconds = state.ageInTicks / 20.0F;
         AnimationClip.Trigger trigger = CosmeticAnimator.trigger(state);
+        CosmeticRenderUtil.AnchorPoser poser = CosmeticRenderUtil.onModel(model);
+        boolean slim = CosmeticRenderUtil.slimArms(model);
         EnumSet<Category> drawn = EnumSet.noneOf(Category.class);
         for (String id : ids) {
             BakedCosmetic cosmetic = CosmeticLibrary.get().baked(id);
             if (cosmetic == null) continue; // not loaded yet, or rejected by validation
             if (!drawn.add(cosmetic.definition().category())) continue; // one per category
-            ModelPart anchor = CosmeticRenderUtil.anchorPart(model, cosmetic.definition().anchor());
-            if (!anchor.visible) continue;
-
-            pose.pushPose();
-            AnchorTransform.apply(pose, model.root(), anchor);
-            drawer.draw(cosmetic, pose, overlay, seconds, trigger);
-            pose.popPose();
+            CosmeticRenderUtil.draw(cosmetic, pose, poser, sink, seconds, trigger, light, overlay, slim, false);
         }
     }
 

@@ -29,7 +29,7 @@ export const TOKEN_TTL_SECONDS = 30 * 60;
 /** Text the client signs; the prefix keeps it from ever looking like a signed chat message. */
 export const LOGIN_MESSAGE_PREFIX = "htzcosmetics-login:v1:";
 const MAX_BATCH = 100;
-const MAX_EQUIPPED = 8;
+const MAX_EQUIPPED = 10; // one per category
 const MAX_BODY_BYTES = 4096;
 const MIN_SECONDS_BETWEEN_WRITES = 2;
 const EQUIPPED_CACHE_SECONDS = 60;

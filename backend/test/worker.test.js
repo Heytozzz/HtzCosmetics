@@ -156,7 +156,7 @@ describe("equipped", () => {
 
   it("validates cosmetic ids", async () => {
     const token = await login();
-    for (const ids of [["../x"], ["UPPER"], ["a".repeat(33)], [1], "top_hat", Array(9).fill("a")]) {
+    for (const ids of [["../x"], ["UPPER"], ["a".repeat(33)], [1], "top_hat", Array(11).fill("a")]) {
       expect((await call("PUT", "/v1/me/equipped", { token, body: { ids } })).status).toBe(400);
     }
   });

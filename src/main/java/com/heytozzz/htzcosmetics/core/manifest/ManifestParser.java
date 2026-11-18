@@ -29,8 +29,10 @@ import java.util.regex.Pattern;
  *       "name": { "en_us": "Top hat", "es_es": "Chistera" },
  *       "category": "HEAD", "rarity": "RARE", "anchor": "HEAD", "minFormat": 1,
  *       "model":   { "sha256": "<64 hex>", "size": 1830 },
- *       "texture": { "sha256": "<64 hex>", "size": 912 }
+ *       "texture": { "sha256": "<64 hex>", "size": 912 },
+ *       "glow": { ... }   (optional, see Glow; minFormat 2)
  *     }
+ *     (AURA cosmetics, minFormat 2: "aura": { ... } and "glow" required, "model"/"texture" optional together)
  *   ]
  * }
  * }</pre>
@@ -41,8 +43,11 @@ import java.util.regex.Pattern;
 public final class ManifestParser {
     /** Highest manifest structure version this build understands. */
     public static final int SUPPORTED_MANIFEST_FORMAT = 1;
-    /** Highest cosmetic content (model) format this build understands. */
-    public static final int SUPPORTED_COSMETIC_FORMAT = 1;
+    /**
+     * Highest cosmetic content format this build understands.
+     * 2 added: clothing categories and AURA, per-group body parts in models, "glow" and "aura" blocks.
+     */
+    public static final int SUPPORTED_COSMETIC_FORMAT = 2;
 
     private static final Pattern ID = Pattern.compile("[a-z0-9_]{1,32}");
     private static final Pattern LANGUAGE = Pattern.compile("[a-z]{2,3}_[a-z]{2,3}");
@@ -117,11 +122,27 @@ public final class ManifestParser {
             Anchor anchor = enumValue(Anchor.values(), Json.string(obj, "anchor", 32));
             if (category == null || rarity == null || anchor == null || !category.allows(anchor)) return null;
 
-            Map<String, String> names = parseNames(Json.object(obj, "name"));
-            AssetRef model = parseAsset(Json.object(obj, "model"), Limits.MAX_MODEL_BYTES);
-            AssetRef texture = parseAsset(Json.object(obj, "texture"), Limits.MAX_TEXTURE_BYTES);
+            // Content newer than format 1 must say so, so that older builds skip it instead of misreading it.
+            if (minFormat < 2 && (!category.inFormat1() || Json.has(obj, "glow") || Json.has(obj, "aura"))) return null;
 
-            return new CosmeticDefinition(id, names, category, rarity, anchor, minFormat, model, texture);
+            Map<String, String> names = parseNames(Json.object(obj, "name"));
+            boolean aura = category.isAura();
+            AssetRef model = null;
+            AssetRef texture = null;
+            if (!aura || Json.has(obj, "model") || Json.has(obj, "texture")) {
+                model = parseAsset(Json.object(obj, "model"), Limits.MAX_MODEL_BYTES);
+                texture = parseAsset(Json.object(obj, "texture"), Limits.MAX_TEXTURE_BYTES);
+            }
+            Glow glow = Json.has(obj, "glow") ? Glow.parse(Json.object(obj, "glow")) : null;
+            Aura auraSpec = null;
+            if (aura) {
+                if (glow == null) return null; // an aura's colours come from its glow
+                auraSpec = Json.has(obj, "aura") ? Aura.parse(Json.object(obj, "aura")) : new Aura(0.2, 0.5);
+            } else if (Json.has(obj, "aura")) {
+                return null;
+            }
+
+            return new CosmeticDefinition(id, names, category, rarity, anchor, minFormat, model, texture, glow, auraSpec);
         } catch (ValidationException e) {
             return null;
         }

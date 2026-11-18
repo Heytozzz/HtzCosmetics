@@ -63,6 +63,23 @@ final class CosmeticAnimator {
         }
     }
 
+    /** Gives the bloom copy {@code to} the current pose of the model's bones {@code from} (same bone order). */
+    static void copyPose(ModelPart[] from, ModelPart[] to) {
+        for (int i = 0; i < from.length; i++) {
+            ModelPart a = from[i];
+            ModelPart b = to[i];
+            b.x = a.x;
+            b.y = a.y;
+            b.z = a.z;
+            b.xRot = a.xRot;
+            b.yRot = a.yRot;
+            b.zRot = a.zRot;
+            b.xScale = a.xScale;
+            b.yScale = a.yScale;
+            b.zScale = a.zScale;
+        }
+    }
+
     private static AnimationClip choose(List<AnimationClip> clips, AnimationClip.Trigger wanted) {
         AnimationClip idle = null;
         for (AnimationClip c : clips) {

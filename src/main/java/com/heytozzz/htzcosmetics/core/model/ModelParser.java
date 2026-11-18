@@ -4,6 +4,8 @@ import com.heytozzz.htzcosmetics.core.Limits;
 import com.heytozzz.htzcosmetics.core.ValidationException;
 import com.heytozzz.htzcosmetics.core.json.Json;
 import com.heytozzz.htzcosmetics.core.json.StrictJsonParser;
+import com.heytozzz.htzcosmetics.core.manifest.Anchor;
+import com.heytozzz.htzcosmetics.core.manifest.Category;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,10 +27,14 @@ import java.util.regex.Pattern;
  *   ]
  * }
  * }</pre>
+ * Format 2: a root bone may name the body part it follows with {@code "anchor": "LEFT_ARM"} (HEAD, BODY, LEFT_ARM,
+ * RIGHT_ARM, LEFT_LEG, RIGHT_LEG); its pivot is then relative to that part. Whether a cosmetic may use a part is
+ * decided by its category ({@link com.heytozzz.htzcosmetics.core.manifest.Category#allows}).
  * An optional "animations" block holds declarative keyframes (see {@link AnimationParser}). Unknown keys are ignored.
  */
 public final class ModelParser {
-    public static final int SUPPORTED_FORMAT = 1;
+    /** 2 added the optional "anchor" of root bones (multi-part cosmetics such as clothing). */
+    public static final int SUPPORTED_FORMAT = 2;
     private static final Pattern BONE_NAME = Pattern.compile("[A-Za-z0-9_]{1,32}");
 
     private ModelParser() {
@@ -67,6 +73,17 @@ public final class ModelParser {
                 parentIndex = idx;
             }
 
+            Anchor anchor = null;
+            if (Json.has(b, "anchor")) {
+                if (format < 2) throw new ValidationException("bone anchors need model format 2");
+                if (parentIndex >= 0) throw new ValidationException("only top-level bones can have an anchor");
+                String text = Json.string(b, "anchor", 16);
+                for (Anchor a : Anchor.values()) {
+                    if (a.name().equals(text)) anchor = a;
+                }
+                if (anchor == null) throw new ValidationException("unknown bone anchor");
+            }
+
             double[] pivot = Json.numbers(b, "pivot", 3, -Limits.MAX_COORDINATE, Limits.MAX_COORDINATE, new double[3]);
             double[] rotation = Json.numbers(b, "rotation", 3, -Limits.MAX_ROTATION_DEGREES, Limits.MAX_ROTATION_DEGREES,
                 new double[3]);
@@ -80,12 +97,25 @@ public final class ModelParser {
             }
 
             indexByName.put(name, bones.size());
-            bones.add(new Bone(name, parentIndex, pivot, rotation, Collections.unmodifiableList(cubes)));
+            bones.add(new Bone(name, parentIndex, pivot, rotation, Collections.unmodifiableList(cubes), anchor));
         }
         if (totalCubes == 0) throw new ValidationException("model has no cubes");
 
         List<Bone> boneList2 = Collections.unmodifiableList(bones);
         return new CosmeticModel(format, texWidth, texHeight, boneList2, totalCubes, AnimationParser.parse(root, boneList2));
+    }
+
+    /**
+     * Checks that every body part the model's top-level groups follow is allowed for the cosmetic's category
+     * (e.g. no sleeves on a hat). Used by the mod and by the site builder.
+     */
+    public static void checkAnchors(CosmeticModel model, Category category) throws ValidationException {
+        for (Bone bone : model.bones()) {
+            if (bone.anchor() != null && !category.allows(bone.anchor())) {
+                throw new ValidationException("group '" + bone.name() + "' follows " + bone.anchor()
+                    + ", which " + category + " cosmetics cannot use");
+            }
+        }
     }
 
     private static Cube parseCube(Map<String, Object> c, int texWidth, int texHeight) throws ValidationException {

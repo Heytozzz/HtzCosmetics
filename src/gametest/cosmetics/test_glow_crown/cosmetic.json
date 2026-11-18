@@ -1,0 +1,19 @@
+{
+  "name": {
+    "en_us": "Test glow crown",
+    "es_es": "Corona brillante de prueba"
+  },
+  "category": "HEAD",
+  "rarity": "LEGENDARY",
+  "glow": {
+    "colors": [
+      "#FFD24A",
+      "#FF5AD2"
+    ],
+    "cycle": 3,
+    "emissive": true,
+    "bloom": 0.9,
+    "radius": 1.2,
+    "pulse": 0
+  }
+}

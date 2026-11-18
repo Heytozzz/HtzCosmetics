@@ -70,6 +70,9 @@ public final class CosmeticsScreen extends Screen {
     private long highlightUntil;
     private PreviewMode previewMode = PreviewMode.FRONT;
     private float yaw;
+    /** Forward/backward tilt of the preview in degrees (vertical drag). */
+    private float pitch;
+    private static final float MAX_PITCH = 80.0F;
     // Preview without a world: the account's skin on a plain player model.
     private java.util.function.Supplier<GuiCompat.SkinInfo> skin;
     private net.minecraft.client.model.PlayerModel wideModel;
@@ -78,6 +81,7 @@ public final class CosmeticsScreen extends Screen {
     private boolean panningPreview;
     private static final float MAX_ZOOM = 6.0F;
     private float zoom = 1.0F;
+    private int categoryStep = 17;
     private float panX;
     private float panY;
     private long lastFrameNanos;
@@ -272,6 +276,9 @@ public final class CosmeticsScreen extends Screen {
     private void drawCategories(GuiGraphics g, int mx, int my) {
         panel(g, leftX, bodyY, leftW, bodyBottom - bodyY);
         int y = bodyY + 4;
+        // Rows shrink a little on small screens so every category fits above "Options".
+        int rows = Category.values().length + 1;
+        categoryStep = Math.max(11, Math.min(17, (bodyBottom - 24 - y) / rows));
         y = categoryRow(g, null, Component.translatable("htzcosmetics.category.all"), y, mx, my);
         for (Category c : Category.values()) y = categoryRow(g, c, categoryName(c), y, mx, my);
 
@@ -284,23 +291,25 @@ public final class CosmeticsScreen extends Screen {
 
     private int categoryRow(GuiGraphics g, Category c, Component name, int y, int mx, int my) {
         boolean on = category == c;
-        boolean hover = mx >= leftX && mx < leftX + leftW && my >= y && my < y + 16;
+        int h = categoryStep - 1;
+        int textY = y + (h - 8) / 2;
+        boolean hover = mx >= leftX && mx < leftX + leftW && my >= y && my < y + h;
         if (on) {
-            g.fill(leftX + 1, y, leftX + leftW - 1, y + 16, CHIP_ON);
-            g.fill(leftX + 1, y, leftX + 3, y + 16, ACCENT);
+            g.fill(leftX + 1, y, leftX + leftW - 1, y + h, CHIP_ON);
+            g.fill(leftX + 1, y, leftX + 3, y + h, ACCENT);
         } else if (hover) {
-            g.fill(leftX + 1, y, leftX + leftW - 1, y + 16, CARD_HOVER);
+            g.fill(leftX + 1, y, leftX + leftW - 1, y + h, CARD_HOVER);
         }
-        g.drawString(font, name, leftX + 8, y + 4, on ? TEXT : TEXT_DIM, false);
+        g.drawString(font, name, leftX + 8, textY, on ? TEXT : TEXT_DIM, false);
         int count = 0;
         for (CosmeticDefinition d : CosmeticLibrary.get().available()) if (c == null || d.category() == c) count++;
         String n = Integer.toString(count);
-        g.drawString(font, n, leftX + leftW - 6 - font.width(n), y + 4, TEXT_FAINT, false);
-        regions.add(new Region(leftX, y, leftW, 16, () -> {
+        g.drawString(font, n, leftX + leftW - 6 - font.width(n), textY, TEXT_FAINT, false);
+        regions.add(new Region(leftX, y, leftW, h, () -> {
             category = c;
             page = 0;
         }));
-        return y + 17;
+        return y + categoryStep;
     }
 
     private void drawGrid(GuiGraphics g, int mx, int my) {
@@ -402,7 +411,7 @@ public final class CosmeticsScreen extends Screen {
             }
             float seconds = (System.currentTimeMillis() % 3_600_000L) / 1000.0F;
             g.guiRenderState.submitPicturesInPictureState(PlayerPreviewRenderState.of(model, playerSkin.texture(), worn,
-                yaw, seconds, zoom, panX, panY, previewX + 2, areaTop, previewX + previewW - 2, areaBottom,
+                yaw, pitch, seconds, zoom, panX, panY, previewX + 2, areaTop, previewX + previewW - 2, areaBottom,
                 g.scissorStack.peek()));
             drawPreviewControls(g, mx, my);
         }
@@ -420,6 +429,7 @@ public final class CosmeticsScreen extends Screen {
                 previewMode = mode;
                 if (mode == PreviewMode.FRONT) yaw = 0;
                 if (mode == PreviewMode.BACK) yaw = 180;
+                pitch = 0;
             }, "preview:" + mode.name().toLowerCase(Locale.ROOT)) + 3;
         }
 
@@ -450,7 +460,7 @@ public final class CosmeticsScreen extends Screen {
                 Component.translatable("htzcosmetics.screen.help_move"),
                 Component.translatable("htzcosmetics.screen.help_zoom")), mx, my);
         }
-        if (zoom != 1.0F || panX != 0 || panY != 0) {
+        if (zoom != 1.0F || panX != 0 || panY != 0 || pitch != 0) {
             Component reset = Component.translatable("htzcosmetics.screen.reset_view");
             int rw = font.width(reset) + 10;
             chip(g, previewX + previewW - 4 - rw, bodyY + 2, reset, TEXT_DIM, false, mx, my, this::resetView, "preview:reset");
@@ -458,6 +468,7 @@ public final class CosmeticsScreen extends Screen {
     }
 
     private void resetView() {
+        pitch = 0;
         zoom = 1.0F;
         panX = 0;
         panY = 0;
@@ -530,6 +541,10 @@ public final class CosmeticsScreen extends Screen {
 
     public float previewYaw() {
         return yaw;
+    }
+
+    public float previewPitch() {
+        return pitch;
     }
 
     public float previewZoom() {
@@ -685,13 +700,28 @@ public final class CosmeticsScreen extends Screen {
         if (!draggingPreview) return false;
         previewMode = PreviewMode.FREE;
         yaw = (float) ((yaw - dx * 2.0) % 360);
+        pitch = (float) Math.max(-MAX_PITCH, Math.min(MAX_PITCH, pitch - dy * 2.0));
         return true;
     }
 
     /** Mouse wheel over the preview zooms in and out (1x to 6x). */
     private boolean handleZoom(double mx, double my, double amount) {
         if (equippedWindow || !inPreviewArea(mx, my) || amount == 0) return false;
-        zoom = (float) Math.max(1.0, Math.min(MAX_ZOOM, zoom * Math.pow(1.2, amount)));
+        float newZoom = (float) Math.max(1.0, Math.min(MAX_ZOOM, zoom * Math.pow(1.2, amount)));
+        // Keep the point under the cursor where it is: pan' = m - (m - pan) * zoom' / zoom,
+        // with m the cursor relative to the middle of the preview area.
+        float cx = previewX + previewW / 2.0F;
+        float cy = (bodyY + 14 + bodyBottom - 64) / 2.0F;
+        float ratio = newZoom / zoom;
+        float mxRel = (float) mx - cx;
+        float myRel = (float) my - cy;
+        panX = mxRel - (mxRel - panX) * ratio;
+        panY = myRel - (myRel - panY) * ratio;
+        zoom = newZoom;
+        float limitX = previewW * zoom / 2;
+        float limitY = (bodyBottom - bodyY) * zoom / 2;
+        panX = Math.max(-limitX, Math.min(limitX, panX));
+        panY = Math.max(-limitY, Math.min(limitY, panY));
         if (zoom == 1.0F) {
             panX = 0;
             panY = 0;

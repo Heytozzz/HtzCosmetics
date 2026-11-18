@@ -14,6 +14,14 @@ Pantalla principal (el día a día):
 - **Probar en el juego**: construye `site/` y abre Minecraft 1.21.8 de prueba con tus cosméticos. Ciérralo o pulsa **Detener** en el registro.
 - **Publicar…**: construye y firma `site/`, te enseña qué cambia (nuevos, cambiados, eliminados) y solo sube a Internet si confirmas.
 
+En el editor también tienes:
+
+- **Categorías**: Cabeza, Collar, Hombro, Espalda, Camisa, Abrigo, Cintura, Pantalón, Zapatos y Aura. Bajo los botones se explica a qué partes del cuerpo puede ir cada una.
+- **Ropa que sigue a varias partes** (camisa, abrigo, pantalón, zapatos…): en Blockbench, pon a cada grupo principal el nombre de la parte del cuerpo (`left_arm`, `right_arm`, `left_leg`, `right_leg`, `body`, `head`; también vale en español, como `brazo_izquierdo` o `pierna_derecha`). Al cargar el modelo, el editor muestra **«Grupos principales y la parte que siguen»**: así compruebas que las mangas van con los brazos. La vista previa la enseña puesta sobre un jugador gris.
+- **7. Brillo** (opcional, cualquier categoría): pulsa **Con brillo** y elige de 1 a 8 colores (clic en un color para cambiarlo, × para quitarlo, **+ Color** para añadir otro). Con varios colores, se mezclan en bucle según el **Ciclo de color**. **Brillo propio** hace que se vea a plena luz también de noche (con shaders, además brilla). **Intensidad** y **Tamaño del halo** controlan el resplandor de color alrededor. **Pulso → Respirar** lo hace latir. La vista previa enseña un brillo aproximado.
+- **Aura**: un efecto de color alrededor de todo el jugador, **sin modelo ni textura**. Al elegir Aura se ocultan los archivos y el brillo se activa solo (sus colores son los del aura). En **8. Aura** eliges el **Relleno** (luz suave sobre el cuerpo) y el **Contorno** (borde de color).
+- Si algo no vale (por ejemplo, un pulso de menos de 0,25 s escrito a mano en `cosmetic.json`), **Comprobar** te lo explica en español.
+
 Abajo está el **registro**, donde ves lo que hace cada acción. Abajo a la izquierda se ve cuántos días faltan para que caduque la firma.
 
 **Mantenimiento / Avanzado** (abajo a la izquierda, en rojo) está aparte a propósito y cada acción pide confirmación:
@@ -48,12 +56,50 @@ Ejemplo de `cosmetic.json`:
 }
 ```
 
-- `category`: `HEAD`, `BACK`, `SHOULDER` o `WAIST`.
+- `category`, una de estas:
+
+  | Categoría | Qué es | Partes del cuerpo que puede seguir |
+  |---|---|---|
+  | `HEAD` | Cabeza (sombreros, coronas) | cabeza |
+  | `NECKLACE` | Collar | cuerpo, cabeza |
+  | `SHOULDER` | Hombro | cuerpo, brazos |
+  | `BACK` | Espalda (alas, mochilas) | cuerpo |
+  | `SHIRT` | Camisa | cuerpo, brazos |
+  | `COAT` | Abrigo | cuerpo, brazos, piernas |
+  | `WAIST` | Cintura (cinturones, faldas) | cuerpo, piernas |
+  | `PANTS` | Pantalón | cuerpo, piernas |
+  | `SHOES` | Zapatos | piernas |
+  | `AURA` | Aura: brillo, contorno y bloom alrededor de todo el cuerpo (sin modelo) | todo el cuerpo |
+
 - `rarity`: `COMMON`, `UNCOMMON`, `RARE`, `EPIC` o `LEGENDARY`.
-- `anchor` (opcional): la parte del cuerpo a la que va pegado el cosmético; se mueve con ella. Si no lo pones, es `HEAD` para la categoría `HEAD` y `BODY` para las demás. `SHOULDER` también admite `LEFT_ARM` y `RIGHT_ARM`.
+- `anchor` (opcional): la parte del cuerpo principal del cosmético; se mueve con ella. Si no lo pones, es la cabeza para `HEAD`, la pierna derecha para `SHOES` y el cuerpo para las demás.
+- `glow` (opcional, cualquier categoría): brillo con bloom de colores. Ejemplo:
+
+  ```json
+  "glow": { "colors": ["#FFD24A", "#FF5AD2"], "cycle": 3, "emissive": true, "bloom": 0.6, "radius": 1, "pulse": 0 }
+  ```
+
+  - `colors`: de 1 a 8 colores `#RRGGBB`; si pones varios, va pasando de uno a otro en bucle.
+  - `cycle`: segundos que tarda en recorrer todos los colores (0,25 a 60; por defecto 4).
+  - `emissive`: `true` hace que el cosmético se vea a plena luz también de noche (por defecto `true`). Con shaders, el shader le añade su propio bloom.
+  - `bloom`: intensidad del halo de color alrededor (0 a 1; 0 = sin halo; por defecto 0,6).
+  - `radius`: tamaño del halo en píxeles del modelo (0,1 a 3; por defecto 1).
+  - `pulse`: segundos de cada "respiración" del brillo (0 = fijo, o de 0,25 a 60).
+- `aura` (solo para la categoría `AURA`, que además **necesita** `glow` para sus colores):
+
+  ```json
+  "aura": { "fill": 0.2, "outline": 0.5 }
+  ```
+
+  - `fill`: luz suave de color sobre el cuerpo (0 a 0,6; por defecto 0,2).
+  - `outline`: grosor del contorno en píxeles (0 a 1,5; 0 = sin contorno; por defecto 0,5).
+
+  Un aura no necesita `model.bbmodel` ni `texture.png`: basta con `cosmetic.json`.
 - `name`: el nombre en inglés (`en_us`) es obligatorio. Cada nombre puede tener hasta 48 caracteres.
 
 ### Reglas al modelar en Blockbench
+
+- **Ropa (camisas, abrigos, pantalones, zapatos...):** cada grupo principal (de primer nivel) cuyo nombre sea una parte del cuerpo sigue a esa parte: `head`, `body`, `left_arm`, `right_arm`, `left_leg`, `right_leg` (también valen en español, como `cabeza`, `cuerpo`, `brazo_izquierdo`, `brazo_derecho`, `pierna_izquierda`, `pierna_derecha`). Así las mangas se mueven con los brazos y las perneras con las piernas. Modela la ropa sobre el jugador de referencia, un poco más grande que la piel (usa *Inflate* de 0,3 o más para que no se meta dentro de la segunda capa de la skin). Solo se usan las partes que permite la categoría (tabla de arriba); los demás grupos siguen la parte principal.
 
 - Usa un proyecto **Modded Entity** con **Box UV**.
 - Modela el cosmético encima de un jugador normal, con los pies en Y=0 y la cabeza entre Y=24 y Y=32. Si añades un jugador de referencia, ocúltalo (icono del ojo); las piezas ocultas no se exportan.
