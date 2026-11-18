@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "manifestVersion": 1794991955,
-  "expiresAt": 1810543955,
+  "manifestVersion": 1795032910,
+  "expiresAt": 1810584910,
   "cosmetics": [
     {
       "id": "angel_halo",
@@ -31,7 +31,7 @@
         "es_mx": "Sombrero de copa"
       },
       "category": "HEAD",
-      "rarity": "RARE",
+      "rarity": "UNCOMMON",
       "anchor": "HEAD",
       "minFormat": 1,
       "model": {
