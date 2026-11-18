@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "texture": {
+    "width": 32,
+    "height": 16
+  },
+  "bones": [
+    {
+      "name": "halo",
+      "pivot": [0, -11.5, 0],
+      "rotation": [0, 0, 0],
+      "cubes": [
+        {
+          "origin": [-4, -0.5, -4],
+          "size": [8, 1, 1],
+          "uv": [0, 0]
+        },
+        {
+          "origin": [-4, -0.5, 3],
+          "size": [8, 1, 1],
+          "uv": [0, 2]
+        },
+        {
+          "origin": [3, -0.5, -3],
+          "size": [1, 1, 6],
+          "uv": [0, 4]
+        },
+        {
+          "origin": [-4, -0.5, -3],
+          "size": [1, 1, 6],
+          "uv": [14, 4]
+        }
+      ]
+    }
+  ],
+  "animations": [
+    {
+      "trigger": "idle",
+      "length": 4,
+      "bones": {
+        "halo": {
+          "rotation": {
+            "interpolation": "linear",
+            "keyframes": [
+              [0, 0, 0, 0],
+              [4, 0, -360, 0]
+            ]
+          },
+          "position": {
+            "interpolation": "smooth",
+            "keyframes": [
+              [0, 0, 0, 0],
+              [2, 0, -1, 0],
+              [4, 0, 0, 0]
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
