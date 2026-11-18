@@ -1,0 +1,16 @@
+{
+  "meta": { "format_version": "4.10", "model_format": "modded_entity", "box_uv": true },
+  "name": "top_hat",
+  "resolution": { "width": 64, "height": 32 },
+  "elements": [
+    { "name": "brim", "type": "cube", "box_uv": true, "from": [-5, 32, -5], "to": [5, 33, 5],
+      "origin": [0, 24, 0], "uv_offset": [0, 0], "uuid": "11111111-0000-0000-0000-000000000001" },
+    { "name": "crown", "type": "cube", "box_uv": true, "from": [-4, 33, -4], "to": [4, 40, 4],
+      "origin": [0, 24, 0], "uv_offset": [0, 11], "uuid": "11111111-0000-0000-0000-000000000002" }
+  ],
+  "outliner": [
+    { "name": "hat", "origin": [0, 24, 0], "rotation": [0, 0, 0], "uuid": "22222222-0000-0000-0000-000000000001",
+      "children": [ "11111111-0000-0000-0000-000000000001", "11111111-0000-0000-0000-000000000002" ] }
+  ],
+  "textures": []
+}

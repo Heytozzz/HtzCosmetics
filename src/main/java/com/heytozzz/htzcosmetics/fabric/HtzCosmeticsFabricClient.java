@@ -1,0 +1,120 @@
+package com.heytozzz.htzcosmetics.fabric;
+
+//? if fabric {
+import com.heytozzz.htzcosmetics.HtzCosmetics;
+import com.heytozzz.htzcosmetics.client.ClientBootstrap;
+import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
+import com.heytozzz.htzcosmetics.client.EquippedCosmetics;
+import com.heytozzz.htzcosmetics.client.render.CosmeticLayer;
+import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.network.chat.Component;
+
+import java.util.UUID;
+
+/**
+ * Fabric client entrypoint. Only Fabric-specific glue lives in this package;
+ * the real logic is in {@code client} and {@code core} so other loaders can reuse it.
+ */
+public final class HtzCosmeticsFabricClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        HtzCosmetics.LOGGER.info("HtzCosmetics {} loaded on Minecraft {}", HtzCosmetics.VERSION, HtzCosmetics.MINECRAFT);
+
+        // Adds our render layer to both player renderers (wide and slim arms).
+        LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
+            if (renderer instanceof PlayerRenderer playerRenderer) helper.register(new CosmeticLayer(playerRenderer));
+        });
+
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientBootstrap.loadCosmetics());
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
+            ClientCommandManager.literal(HtzCosmetics.MOD_ID)
+                .executes(HtzCosmeticsFabricClient::status)
+                .then(ClientCommandManager.literal("list").executes(HtzCosmeticsFabricClient::list))
+                .then(ClientCommandManager.literal("reload").executes(ctx -> {
+                    ClientBootstrap.loadCosmetics();
+                    ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.reloading"));
+                    return 1;
+                }))
+                .then(ClientCommandManager.literal("equip")
+                    .then(ClientCommandManager.argument("id", StringArgumentType.word())
+                        .suggests((ctx, builder) -> {
+                            for (CosmeticDefinition def : CosmeticLibrary.get().available()) builder.suggest(def.id());
+                            return builder.buildFuture();
+                        })
+                        .executes(HtzCosmeticsFabricClient::equip)))
+                .then(ClientCommandManager.literal("unequip")
+                    .then(ClientCommandManager.argument("id", StringArgumentType.word())
+                        .suggests((ctx, builder) -> {
+                            builder.suggest("all");
+                            for (String id : EquippedCosmetics.get(self())) builder.suggest(id);
+                            return builder.buildFuture();
+                        })
+                        .executes(HtzCosmeticsFabricClient::unequip)))));
+    }
+
+    private static UUID self() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null ? mc.player.getUUID() : mc.getUser().getProfileId();
+    }
+
+    private static String language() {
+        return Minecraft.getInstance().getLanguageManager().getSelected();
+    }
+
+    private static int status(CommandContext<FabricClientCommandSource> ctx) {
+        ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.status",
+            HtzCosmetics.VERSION, CosmeticLibrary.get().available().size()));
+        return 1;
+    }
+
+    private static int list(CommandContext<FabricClientCommandSource> ctx) {
+        var available = CosmeticLibrary.get().available();
+        if (available.isEmpty()) {
+            ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.none"));
+            return 0;
+        }
+        for (CosmeticDefinition def : available) {
+            // Names are plain text checked by the manifest parser; Component.literal never interprets formatting.
+            ctx.getSource().sendFeedback(Component.literal("- " + def.id() + " : " + def.displayName(language())
+                + " [" + def.category() + ", " + def.rarity() + "]"));
+        }
+        return available.size();
+    }
+
+    private static int equip(CommandContext<FabricClientCommandSource> ctx) {
+        String id = StringArgumentType.getString(ctx, "id");
+        CosmeticDefinition def = CosmeticLibrary.get().definition(id);
+        if (def == null) {
+            ctx.getSource().sendError(Component.translatable("htzcosmetics.command.unknown", id));
+            return 0;
+        }
+        EquippedCosmetics.equip(self(), def);
+        ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.equipped",
+            Component.literal(def.displayName(language()))));
+        return 1;
+    }
+
+    private static int unequip(CommandContext<FabricClientCommandSource> ctx) {
+        String id = StringArgumentType.getString(ctx, "id");
+        if (id.equals("all")) {
+            EquippedCosmetics.clear(self());
+            ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.unequipped_all"));
+            return 1;
+        }
+        boolean removed = EquippedCosmetics.unequip(self(), id);
+        ctx.getSource().sendFeedback(Component.translatable(removed
+            ? "htzcosmetics.command.unequipped" : "htzcosmetics.command.not_worn", id));
+        return removed ? 1 : 0;
+    }
+}
+//?}

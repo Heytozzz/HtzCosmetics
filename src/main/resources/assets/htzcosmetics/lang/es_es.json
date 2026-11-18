@@ -1,0 +1,11 @@
+{
+  "htzcosmetics.command.hello": "¡HtzCosmetics %s funciona!",
+  "htzcosmetics.command.status": "HtzCosmetics %s: %s cosméticos disponibles. Usa /htzcosmetics list o /htzcosmetics equip <id>.",
+  "htzcosmetics.command.none": "No hay cosméticos cargados.",
+  "htzcosmetics.command.reloading": "Recargando cosméticos...",
+  "htzcosmetics.command.unknown": "Cosmético desconocido: %s",
+  "htzcosmetics.command.equipped": "Equipado: %s",
+  "htzcosmetics.command.unequipped": "Quitado: %s",
+  "htzcosmetics.command.unequipped_all": "Todos los cosméticos quitados.",
+  "htzcosmetics.command.not_worn": "No llevas puesto %s."
+}

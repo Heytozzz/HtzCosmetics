@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+  "name": "${name}",
+  "description": "Free client-side cosmetics, visible to every player who has the mod.",
+  "authors": [
+    "heytozzz"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.heytozzz.htzcosmetics.fabric.HtzCosmeticsFabricClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader}",
+    "minecraft": "${minecraft}",
+    "fabric-api": "*"
+  },
+  "mixins": [
+    "htzcosmetics.mixins.json"
+  ]
+}
