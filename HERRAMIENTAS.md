@@ -143,7 +143,7 @@ Para volver a comprobar `site/` sin reconstruirlo:
 
 ## 3. Tus claves (importante)
 
-Las claves ya están creadas en `C:\Users\caro3\.htzcosmetics\keys\`, fuera del proyecto para que nunca acaben en git:
+Las claves ya están creadas en `%USERPROFILE%\.htzcosmetics\keys\` (la carpeta `.htzcosmetics\keys` dentro de tu carpeta de usuario de Windows), fuera del proyecto para que nunca acaben en git:
 
 - `primary.key` se usa para firmar.
 - `backup.key` es la de reserva.
