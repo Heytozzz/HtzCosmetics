@@ -108,7 +108,7 @@ public final class CosmeticsScreen extends Screen {
         cardH = cardW + 22;
         rows = Math.max(1, (bodyBottom - bodyY - gap - 18) / (cardH + gap));
 
-        search = new EditBox(font, gridX + 70, topY + 3, 96, 16, Component.translatable("htzcosmetics.screen.search"));
+        search = new EditBox(font, gridX + 76, topY + 3, 92, 16, Component.translatable("htzcosmetics.screen.search"));
         search.setHint(Component.translatable("htzcosmetics.screen.search"));
         search.setValue(query);
         search.setResponder(text -> {
@@ -202,7 +202,18 @@ public final class CosmeticsScreen extends Screen {
 
     private void drawTopBar(GuiGraphics g, int mx, int my) {
         panel(g, leftX, topY, width - 2 * leftX, 22);
-        g.drawString(font, title, leftX + 8, topY + 7, TEXT, false);
+
+        // Back arrow (top-left): returns to the menu we came from.
+        int bx = leftX + 3;
+        int by = topY + 3;
+        boolean backHover = mx >= bx && mx < bx + 16 && my >= by && my < by + 16;
+        g.fill(bx, by, bx + 16, by + 16, backHover ? CHIP_ON : CHIP);
+        g.renderOutline(bx, by, 16, 16, PANEL_EDGE);
+        drawLeftArrow(g, bx + 4, by + 4, backHover ? TEXT : TEXT_DIM);
+        if (backHover) g.setTooltipForNextFrame(font, Component.translatable("htzcosmetics.screen.back_tooltip"), mx, my);
+        regions.add(new Region(bx, by, 16, 16, this::onClose, "back"));
+
+        g.drawString(font, title, leftX + 26, topY + 7, TEXT, false);
 
         int x = gridX + 172;
         int right = width - leftX - 6;
@@ -227,6 +238,14 @@ public final class CosmeticsScreen extends Screen {
             sort = Sort.values()[(sort.ordinal() + 1) % Sort.values().length];
             page = 0;
         });
+    }
+
+    /** An 8x8 pixel-art arrow pointing left (crisp at every GUI scale, no font glyph needed). */
+    private static void drawLeftArrow(GuiGraphics g, int x, int y, int color) {
+        for (int i = 0; i < 4; i++) {
+            g.fill(x + i, y + 3 - i, x + i + 1, y + 5 + i, color); // head
+        }
+        g.fill(x + 3, y + 3, x + 8, y + 5, color);                // shaft
     }
 
     private void setRarity(Rarity r) {
@@ -361,8 +380,12 @@ public final class CosmeticsScreen extends Screen {
             renderPlayer(g, previewX + 2, areaTop, previewX + previewW - 2, areaBottom, player);
             g.drawString(font, Component.translatable("htzcosmetics.screen.drag_hint"), previewX + 5, bodyY + 4, TEXT_FAINT, false);
         } else {
-            g.drawCenteredString(font, Component.translatable("htzcosmetics.screen.no_preview"),
-                previewX + previewW / 2, (areaTop + areaBottom) / 2, TEXT_DIM);
+            var lines = font.split(Component.translatable("htzcosmetics.screen.no_preview"), previewW - 12);
+            int ty = (areaTop + areaBottom) / 2 - lines.size() * 5;
+            for (var line : lines) {
+                g.drawString(font, line, previewX + (previewW - font.width(line)) / 2, ty, TEXT_DIM, false);
+                ty += 10;
+            }
         }
 
         // Front / Back / Spin

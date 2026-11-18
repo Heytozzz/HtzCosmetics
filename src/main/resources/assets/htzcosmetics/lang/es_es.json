@@ -10,7 +10,7 @@
   "htzcosmetics.command.not_worn": "No llevas puesto %s.",
   "key.categories.htzcosmetics": "HtzCosmetics",
   "key.htzcosmetics.open": "Abrir cosméticos",
-  "htzcosmetics.screen.title": "Cosméticos",
+  "htzcosmetics.screen.title": "Guardarropa",
   "htzcosmetics.screen.options": "Opciones",
   "htzcosmetics.screen.search": "Buscar...",
   "htzcosmetics.screen.rarity": "Rareza: %s",
@@ -57,5 +57,7 @@
   "htzcosmetics.screen.equipped_title": "Equipados",
   "htzcosmetics.screen.equipped_empty": "No llevas nada puesto.",
   "htzcosmetics.screen.remove": "Quitar",
-  "htzcosmetics.screen.go": "Ir"
+  "htzcosmetics.screen.go": "Ir",
+  "htzcosmetics.button.wardrobe": "Guardarropa",
+  "htzcosmetics.screen.back_tooltip": "Volver"
 }

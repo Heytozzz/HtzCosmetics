@@ -8,6 +8,7 @@ import com.heytozzz.htzcosmetics.client.OwnCosmetics;
 import com.heytozzz.htzcosmetics.client.RemoteSync;
 import com.heytozzz.htzcosmetics.client.gui.CosmeticsScreen;
 import com.heytozzz.htzcosmetics.client.gui.ThumbnailsRenderer;
+import com.heytozzz.htzcosmetics.client.gui.WardrobeButton;
 import com.heytozzz.htzcosmetics.client.render.CosmeticLayer;
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -21,6 +22,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.SpecialGuiElementRegistry;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -41,6 +44,13 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
         // Adds our render layer to both player renderers (wide and slim arms).
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
             if (renderer instanceof PlayerRenderer playerRenderer) helper.register(new CosmeticLayer(playerRenderer));
+        });
+
+        // Wardrobe button on the title and pause menus.
+        ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
+            var buttons = Screens.getButtons(screen);
+            var button = WardrobeButton.forScreen(screen, buttons);
+            if (button != null) buttons.add(button);
         });
 
         // 3D cosmetic thumbnails in the wardrobe menu.

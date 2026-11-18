@@ -33,6 +33,13 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
         enableCompatPacks(context);
+        context.waitFor(mc -> mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen, 600);
+        context.waitTicks(60); // let the title screen finish fading in
+        context.takeScreenshot("htz_title_screen");
+        clickWardrobeButton(context, "title");
+        click(context, "back");
+        check(context, mc -> mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen,
+            "back arrow returns to the title screen");
         try (TestSingleplayerContext world = context.worldBuilder().create()) {
             world.getClientWorld().waitForChunksRender();
             world.getServer().runCommand("time set noon");
@@ -162,11 +169,35 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             context.waitTicks(5);
             context.takeScreenshot("htz_equip_screen_1080p");
 
+            context.setScreen(() -> null);
+            context.runOnClient(mc -> mc.pauseGame(false));
+            context.waitTicks(3);
+            context.takeScreenshot("htz_pause_screen");
+            clickWardrobeButton(context, "pause");
+
             context.setScreen(() -> new CosmeticsOptionsScreen(null));
             context.waitTicks(5);
             context.takeScreenshot("htz_options_screen");
             context.setScreen(() -> null);
         }
+    }
+
+    /** Finds our wardrobe button on the current screen, clicks it, and checks the wardrobe opened. */
+    private static void clickWardrobeButton(ClientGameTestContext context, String where) {
+        int[] p = context.computeOnClient(mc -> {
+            for (var child : mc.screen.children()) {
+                if (child instanceof net.minecraft.client.gui.components.AbstractWidget w
+                    && w.getMessage().getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t
+                    && t.getKey().equals(com.heytozzz.htzcosmetics.client.gui.WardrobeButton.MESSAGE_KEY)) {
+                    return new int[]{w.getX() + w.getWidth() / 2, w.getY() + w.getHeight() / 2};
+                }
+            }
+            return null;
+        });
+        if (p == null) throw new AssertionError("no wardrobe button on the " + where + " screen");
+        clickAt(context, p[0], p[1]);
+        check(context, mc -> mc.screen instanceof CosmeticsScreen, "wardrobe button on the " + where + " screen opens the wardrobe");
+        context.takeScreenshot("htz_wardrobe_from_" + where);
     }
 
     private static void click(ClientGameTestContext context, String key) {

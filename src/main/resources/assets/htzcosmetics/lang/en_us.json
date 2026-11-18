@@ -10,7 +10,7 @@
   "htzcosmetics.command.not_worn": "You are not wearing %s.",
   "key.categories.htzcosmetics": "HtzCosmetics",
   "key.htzcosmetics.open": "Open cosmetics",
-  "htzcosmetics.screen.title": "Cosmetics",
+  "htzcosmetics.screen.title": "Wardrobe",
   "htzcosmetics.screen.options": "Options",
   "htzcosmetics.screen.search": "Search...",
   "htzcosmetics.screen.rarity": "Rarity: %s",
@@ -57,5 +57,7 @@
   "htzcosmetics.screen.equipped_title": "Equipped",
   "htzcosmetics.screen.equipped_empty": "You are not wearing anything.",
   "htzcosmetics.screen.remove": "Remove",
-  "htzcosmetics.screen.go": "Go"
+  "htzcosmetics.screen.go": "Go",
+  "htzcosmetics.button.wardrobe": "Wardrobe",
+  "htzcosmetics.screen.back_tooltip": "Back"
 }
