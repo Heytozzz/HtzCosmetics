@@ -17,7 +17,7 @@
   "depends": {
     "fabricloader": ">=${loader}",
     "minecraft": "${minecraft}",
-    "fabric-api": "*"
+    "fabric-api": ">=${fabric_api}"
   },
   "mixins": [
     "htzcosmetics.mixins.json"

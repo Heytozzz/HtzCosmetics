@@ -106,7 +106,9 @@ tasks {
             register("name", sc.properties["mod.name"])
             register("version", sc.properties["mod.version"])
             register("minecraft", sc.properties["mod.mc_compat"])
-            register("loader", Regex("\\d+\\.\\d+").find(sc.properties["deps.fabric_loader"])!!.value)
+            // Minimums written into fabric.mod.json = exactly the versions we compile and test against.
+            register("loader", sc.properties["deps.fabric_loader"])
+            register("fabric_api", sc.properties["deps.fabric_api_min"])
         }
         filesMatching("fabric.mod.json") { expand(props) }
 
