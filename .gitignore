@@ -37,3 +37,7 @@ site/
 
 # Third-party mods/packs copied locally for compatibility testing only. Never commit.
 devmods/
+
+# HtzCosmetics Studio: the owner's local desktop app. Stays on this PC only, never on GitHub.
+studio/
+HtzCosmetics Studio.bat

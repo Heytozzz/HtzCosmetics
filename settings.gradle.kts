@@ -52,5 +52,5 @@ rootProject.name = "HtzCosmetics"
 // Offline owner tools (key generation, Blockbench conversion, manifest signing). Never shipped in the mod.
 include("tools")
 
-// HtzCosmetics Studio: desktop app for the owner that wraps the tools above. Never shipped in the mod.
-include("studio")
+// HtzCosmetics Studio: the owner's local desktop app (gitignored, only on the owner's PC). Never shipped in the mod.
+if (file("studio/build.gradle.kts").isFile) include("studio")
