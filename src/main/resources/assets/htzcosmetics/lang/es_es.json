@@ -49,7 +49,6 @@
   "htzcosmetics.options.receive_signal.tooltip": "Reacciona al momento cuando un jugador cercano cambia de cosméticos.",
   "htzcosmetics.screen.animated": "animado",
   "htzcosmetics.screen.worn": "Puesto",
-  "htzcosmetics.screen.drag_hint": "Arrastra para girar",
   "htzcosmetics.screen.front": "Frente",
   "htzcosmetics.screen.back": "Espalda",
   "htzcosmetics.screen.spin": "Girar",
@@ -59,5 +58,9 @@
   "htzcosmetics.screen.remove": "Quitar",
   "htzcosmetics.screen.go": "Ir",
   "htzcosmetics.button.wardrobe": "Guardarropa",
-  "htzcosmetics.screen.back_tooltip": "Volver"
+  "htzcosmetics.screen.back_tooltip": "Volver",
+  "htzcosmetics.screen.help_rotate": "Arrastrar con clic izquierdo: girar",
+  "htzcosmetics.screen.help_move": "Arrastrar con clic derecho: mover",
+  "htzcosmetics.screen.help_zoom": "Rueda del ratón: zoom",
+  "htzcosmetics.screen.reset_view": "Restablecer"
 }

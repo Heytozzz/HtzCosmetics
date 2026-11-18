@@ -79,6 +79,11 @@ public final class CosmeticsScreen extends Screen {
     private net.minecraft.client.model.PlayerModel wideModel;
     private net.minecraft.client.model.PlayerModel slimModel;
     private boolean draggingPreview;
+    private boolean panningPreview;
+    private static final float MAX_ZOOM = 6.0F;
+    private float zoom = 1.0F;
+    private float panX;
+    private float panY;
     private long lastFrameNanos;
 
     // Layout (computed in init)
@@ -391,7 +396,7 @@ public final class CosmeticsScreen extends Screen {
         LivingEntity player = minecraft != null ? minecraft.player : null;
         if (player != null) {
             renderPlayer(g, previewX + 2, areaTop, previewX + previewW - 2, areaBottom, player);
-            g.drawString(font, Component.translatable("htzcosmetics.screen.drag_hint"), previewX + 5, bodyY + 4, TEXT_FAINT, false);
+            drawPreviewControls(g, mx, my);
         } else if (skin != null) {
             // No world yet: draw the account's skin and worn cosmetics on a plain player model.
             var playerSkin = skin.get();
@@ -404,8 +409,9 @@ public final class CosmeticsScreen extends Screen {
             }
             float seconds = (System.currentTimeMillis() % 3_600_000L) / 1000.0F;
             g.guiRenderState.submitPicturesInPictureState(PlayerPreviewRenderState.of(model, playerSkin.texture(), worn,
-                yaw, seconds, previewX + 2, areaTop, previewX + previewW - 2, areaBottom, g.scissorStack.peek()));
-            g.drawString(font, Component.translatable("htzcosmetics.screen.drag_hint"), previewX + 5, bodyY + 4, TEXT_FAINT, false);
+                yaw, seconds, zoom, panX, panY, previewX + 2, areaTop, previewX + previewW - 2, areaBottom,
+                g.scissorStack.peek()));
+            drawPreviewControls(g, mx, my);
         }
 
         // Front / Back / Spin
@@ -438,6 +444,32 @@ public final class CosmeticsScreen extends Screen {
             bodyBottom - 14, statusColor(), false);
     }
 
+    /** Top row of the preview: a "?" with the mouse controls, and a reset button once zoomed or moved. */
+    private void drawPreviewControls(GuiGraphics g, int mx, int my) {
+        int hx = previewX + 4;
+        int hy = bodyY + 3;
+        boolean helpHover = mx >= hx && mx < hx + 12 && my >= hy && my < hy + 11;
+        g.fill(hx, hy, hx + 12, hy + 11, helpHover ? CHIP_ON : CHIP);
+        g.drawString(font, "?", hx + 4, hy + 2, helpHover ? TEXT : TEXT_DIM, false);
+        if (helpHover) {
+            g.setComponentTooltipForNextFrame(font, List.of(
+                Component.translatable("htzcosmetics.screen.help_rotate"),
+                Component.translatable("htzcosmetics.screen.help_move"),
+                Component.translatable("htzcosmetics.screen.help_zoom")), mx, my);
+        }
+        if (zoom != 1.0F || panX != 0 || panY != 0) {
+            Component reset = Component.translatable("htzcosmetics.screen.reset_view");
+            int rw = font.width(reset) + 10;
+            chip(g, previewX + previewW - 4 - rw, bodyY + 2, reset, TEXT_DIM, false, mx, my, this::resetView, "preview:reset");
+        }
+    }
+
+    private void resetView() {
+        zoom = 1.0F;
+        panX = 0;
+        panY = 0;
+    }
+
     private void renderPlayer(GuiGraphics g, int x0, int y0, int x1, int y1, LivingEntity entity) {
         float bodyRot = entity.yBodyRot;
         float yRot = entity.getYRot();
@@ -452,9 +484,10 @@ public final class CosmeticsScreen extends Screen {
         entity.yHeadRotO = facing;
         Quaternionf pose = new Quaternionf().rotateZ((float) Math.PI);
         Quaternionf camera = new Quaternionf();
-        int scale = Math.max(20, Math.min((y1 - y0) / 2 - 4, (x1 - x0) / 2));
+        float scale = Math.max(20, Math.min((y1 - y0) / 2 - 4, (x1 - x0) / 2)) * zoom;
+        // Translation is in blocks after scaling: convert the pan (GUI pixels) into blocks (+Y = down on screen).
         InventoryScreen.renderEntityInInventory(g, x0, y0, x1, y1, scale,
-            new Vector3f(0, entity.getBbHeight() / 2.0F + 0.0625F, 0), pose, camera, entity);
+            new Vector3f(panX / scale, entity.getBbHeight() / 2.0F + 0.0625F + panY / scale, 0), pose, camera, entity);
         entity.yBodyRot = bodyRot;
         entity.setYRot(yRot);
         entity.setXRot(xRot);
@@ -531,6 +564,14 @@ public final class CosmeticsScreen extends Screen {
         return yaw;
     }
 
+    public float previewZoom() {
+        return zoom;
+    }
+
+    public float[] previewPan() {
+        return new float[]{panX, panY};
+    }
+
     /** Center of the player preview (GUI coordinates). */
     public int[] previewCenter() {
         return new int[]{previewX + previewW / 2, (bodyY + bodyBottom - 64) / 2};
@@ -555,24 +596,27 @@ public final class CosmeticsScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 && handleClick(mouseX, mouseY)) return true;
+        if (button == 1 && handleRightClick(mouseX, mouseY)) return true;
         if (equippedWindow) return true;
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
-        if (handleDrag(mouseX, mouseY, dx)) return true;
+        if (handleDrag(mouseX, mouseY, dx, dy)) return true;
         return super.mouseDragged(mouseX, mouseY, button, dx, dy);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         draggingPreview = false;
+        panningPreview = false;
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (handleZoom(mouseX, mouseY, scrollY)) return true;
         if (!equippedWindow && mouseX >= gridX && mouseX < gridX + gridW) {
             page = Math.max(0, page - (int) Math.signum(scrollY));
             return true;
@@ -610,10 +654,39 @@ public final class CosmeticsScreen extends Screen {
         return false;
     }
 
-    private boolean handleDrag(double mx, double my, double dx) {
-        if (!draggingPreview || equippedWindow) return false;
+    private boolean inPreviewArea(double mx, double my) {
+        return mx >= previewX && mx < previewX + previewW && my >= bodyY && my < bodyBottom - 64;
+    }
+
+    private boolean handleRightClick(double mx, double my) {
+        if (equippedWindow || !inPreviewArea(mx, my)) return false;
+        panningPreview = true;
+        return true;
+    }
+
+    private boolean handleDrag(double mx, double my, double dx, double dy) {
+        if (equippedWindow) return false;
+        if (panningPreview) {
+            float limitX = previewW * zoom / 2;
+            float limitY = (bodyBottom - bodyY) * zoom / 2;
+            panX = (float) Math.max(-limitX, Math.min(limitX, panX + dx));
+            panY = (float) Math.max(-limitY, Math.min(limitY, panY + dy));
+            return true;
+        }
+        if (!draggingPreview) return false;
         previewMode = PreviewMode.FREE;
         yaw = (float) ((yaw - dx * 2.0) % 360);
+        return true;
+    }
+
+    /** Mouse wheel over the preview zooms in and out (1x to 6x). */
+    private boolean handleZoom(double mx, double my, double amount) {
+        if (equippedWindow || !inPreviewArea(mx, my) || amount == 0) return false;
+        zoom = (float) Math.max(1.0, Math.min(MAX_ZOOM, zoom * Math.pow(1.2, amount)));
+        if (zoom == 1.0F) {
+            panX = 0;
+            panY = 0;
+        }
         return true;
     }
 

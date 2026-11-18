@@ -49,7 +49,6 @@
   "htzcosmetics.options.receive_signal.tooltip": "React right away when a nearby player changes cosmetics.",
   "htzcosmetics.screen.animated": "animated",
   "htzcosmetics.screen.worn": "Worn",
-  "htzcosmetics.screen.drag_hint": "Drag to rotate",
   "htzcosmetics.screen.front": "Front",
   "htzcosmetics.screen.back": "Back",
   "htzcosmetics.screen.spin": "Spin",
@@ -59,5 +58,9 @@
   "htzcosmetics.screen.remove": "Remove",
   "htzcosmetics.screen.go": "Go",
   "htzcosmetics.button.wardrobe": "Wardrobe",
-  "htzcosmetics.screen.back_tooltip": "Back"
+  "htzcosmetics.screen.back_tooltip": "Back",
+  "htzcosmetics.screen.help_rotate": "Left drag: rotate",
+  "htzcosmetics.screen.help_move": "Right drag: move",
+  "htzcosmetics.screen.help_zoom": "Mouse wheel: zoom",
+  "htzcosmetics.screen.reset_view": "Reset"
 }

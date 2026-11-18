@@ -40,9 +40,10 @@ public final class PlayerPreviewRenderer extends PictureInPictureRenderer<Player
         Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.ENTITY_IN_UI);
         float height = state.y1() - state.y0();
         float width = state.x1() - state.x0();
-        float k = Math.min(height * 0.92F / (BOTTOM - TOP), width * 0.9F / 16.0F); // GUI pixels per model pixel
+        float k = Math.min(height * 0.92F / (BOTTOM - TOP), width * 0.9F / 16.0F) * state.zoom(); // GUI px per model px
 
         pose.pushPose();
+        pose.translate(state.panX(), state.panY(), 0.0F);
         pose.scale(k * 16.0F, k * 16.0F, -k * 16.0F);
         pose.mulPose(Axis.YP.rotationDegrees(180.0F + state.yawDegrees()));
         pose.translate(0.0F, -(TOP + BOTTOM) / 2.0F / 16.0F, 0.0F);

@@ -43,6 +43,8 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
         context.takeScreenshot("htz_title_preview_front");
         click(context, "preview:back");
         context.takeScreenshot("htz_title_preview_back");
+        click(context, "preview:front");
+        zoomAndMove(context, "title");
         click(context, "back");
         check(context, mc -> mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen,
             "back arrow returns to the title screen");
@@ -165,6 +167,7 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             context.waitTicks(2);
             check(context, mc -> ((CosmeticsScreen) mc.screen).previewYaw() != 0, "dragging rotates the preview");
             context.takeScreenshot("htz_preview_dragged");
+            zoomAndMove(context, "world");
 
             // Big screen: 1920x1080 at GUI scale 3 (rarity filter shows as chips).
             context.getInput().resizeWindow(1920, 1080);
@@ -204,6 +207,26 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
         clickAt(context, p[0], p[1]);
         check(context, mc -> mc.screen instanceof CosmeticsScreen, "wardrobe button on the " + where + " screen opens the wardrobe");
         context.takeScreenshot("htz_wardrobe_from_" + where);
+    }
+
+    /** Mouse wheel over the preview, then a right-button drag; checks zoom and pan changed, then resets. */
+    private static void zoomAndMove(ClientGameTestContext context, String where) {
+        int[] center = context.computeOnClient(mc -> ((CosmeticsScreen) mc.screen).previewCenter());
+        double scale = context.computeOnClient(mc -> mc.getWindow().getGuiScale());
+        context.getInput().setCursorPos(center[0] * scale, center[1] * scale);
+        context.getInput().scroll(4);
+        context.waitTicks(2);
+        check(context, mc -> ((CosmeticsScreen) mc.screen).previewZoom() > 1.5F, "wheel zooms the preview (" + where + ")");
+        context.getInput().holdMouse(1);
+        context.waitTick();
+        context.getInput().moveCursor(30 * scale, 40 * scale); // right and down
+        context.waitTick();
+        context.getInput().releaseMouse(1);
+        context.waitTicks(2);
+        check(context, mc -> ((CosmeticsScreen) mc.screen).previewPan()[1] > 10, "right drag moves the preview (" + where + ")");
+        context.takeScreenshot("htz_preview_zoom_" + where);
+        click(context, "preview:reset");
+        check(context, mc -> ((CosmeticsScreen) mc.screen).previewZoom() == 1.0F, "reset restores the view (" + where + ")");
     }
 
     private static void click(ClientGameTestContext context, String key) {
