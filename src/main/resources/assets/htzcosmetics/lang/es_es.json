@@ -69,5 +69,9 @@
   "htzcosmetics.screen.help_move": "Arrastrar con clic derecho: mover",
   "htzcosmetics.screen.help_zoom": "Rueda del ratón: zoom",
   "htzcosmetics.screen.reset_view": "Restablecer",
-  "key.category.htzcosmetics.main": "HtzCosmetics"
+  "key.category.htzcosmetics.main": "HtzCosmetics",
+  "htzcosmetics.color.change": "Cambiar color",
+  "htzcosmetics.color.title": "Color: %s",
+  "htzcosmetics.color.default": "Color por defecto",
+  "htzcosmetics.color.custom": "Cualquier color"
 }

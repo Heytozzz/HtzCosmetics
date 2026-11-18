@@ -14,14 +14,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 /** Talks to the HtzCosmetics backend. All responses are untrusted and strictly validated. */
 public final class BackendClient {
     public static final int MAX_BATCH = 100;
     public static final int MAX_EQUIPPED = 10; // one per category (keep equal to the backend)
     private static final int MAX_RESPONSE_BYTES = 128 * 1024;
-    private static final Pattern ID = Pattern.compile("[a-z0-9_]{1,32}");
 
     private final SecureHttp http;
     private final URI base;
@@ -52,7 +50,7 @@ public final class BackendClient {
         if (ids.size() > MAX_EQUIPPED) throw new IllegalArgumentException("too many ids");
         StringBuilder body = new StringBuilder("{\"ids\":[");
         for (int i = 0; i < ids.size(); i++) {
-            if (!ID.matcher(ids.get(i)).matches()) throw new IllegalArgumentException("bad id");
+            if (EquippedEntry.parse(ids.get(i)) == null) throw new IllegalArgumentException("bad id");
             body.append(i == 0 ? "" : ",").append('"').append(ids.get(i)).append('"');
         }
         body.append("]}");
@@ -75,9 +73,11 @@ public final class BackendClient {
             UUID uuid = requested.get(e.getKey());
             if (uuid == null) continue; // never accept data for players we did not ask about
             List<String> ids = new ArrayList<>();
+            java.util.Set<String> seen = new java.util.HashSet<>();
             for (Object v : Json.asArray(e.getValue(), "ids")) {
-                String id = Json.asString(v, "id", 32);
-                if (ID.matcher(id).matches() && !ids.contains(id) && ids.size() < MAX_EQUIPPED) ids.add(id);
+                // "id" or "id:rrggbb"; anything else is dropped, and each cosmetic counts once.
+                EquippedEntry entry = EquippedEntry.parse(Json.asString(v, "id", EquippedEntry.MAX_LENGTH));
+                if (entry != null && ids.size() < MAX_EQUIPPED && seen.add(entry.id())) ids.add(entry.format());
             }
             result.put(uuid, List.copyOf(ids));
         }

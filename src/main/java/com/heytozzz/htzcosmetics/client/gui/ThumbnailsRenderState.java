@@ -15,8 +15,8 @@ public record ThumbnailsRenderState(List<Thumb> thumbs, float seconds, int x0, i
                                     ScreenRectangle scissorArea, ScreenRectangle bounds)
     implements PictureInPictureRenderState {
 
-    /** One cosmetic drawn centered at (cx, cy), fitted into a square of {@code size} GUI pixels. */
-    public record Thumb(BakedCosmetic cosmetic, int cx, int cy, int size, float yawDegrees) {
+    /** One cosmetic in {@code color} (null = default) drawn centered at (cx, cy), fitted into {@code size} GUI pixels. */
+    public record Thumb(BakedCosmetic cosmetic, Integer color, int cx, int cy, int size, float yawDegrees) {
     }
 
     public static ThumbnailsRenderState of(List<Thumb> thumbs, float seconds, int x0, int y0, int x1, int y1,

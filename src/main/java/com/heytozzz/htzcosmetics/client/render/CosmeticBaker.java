@@ -27,8 +27,11 @@ public final class CosmeticBaker {
     private CosmeticBaker() {
     }
 
-    /** One body part's share of a cosmetic: the root holding every top-level bone that follows {@code anchor}. */
-    public record Piece(Anchor anchor, ModelPart root) {
+    /**
+     * One body part's share of a cosmetic: the root holding every top-level bone that follows {@code anchor}, and
+     * its approximate box at rest (centre and half size in model pixels, rotations ignored) for aura glows.
+     */
+    public record Piece(Anchor anchor, ModelPart root, float[] center, float[] half) {
     }
 
     /** A complete copy of the model tree (pieces plus each bone's part, same order as the model's bones). */
@@ -77,13 +80,36 @@ public final class CosmeticBaker {
             parts[i] = part;
         }
         Map<Anchor, Map<String, ModelPart>> roots = new EnumMap<>(Anchor.class);
+        int[] rootOf = new int[n]; // index of each bone's top-level ancestor
+        float[][] offset = new float[n][3];
+        Map<Anchor, float[]> box = new EnumMap<>(Anchor.class); // minX, minY, minZ, maxX, maxY, maxZ
         for (int i = 0; i < n; i++) {
             Bone b = bones.get(i);
-            if (b.parentIndex() >= 0) continue;
-            roots.computeIfAbsent(b.anchor() != null ? b.anchor() : anchor, a -> new HashMap<>()).put(b.name(), parts[i]);
+            rootOf[i] = b.parentIndex() < 0 ? i : rootOf[b.parentIndex()];
+            for (int a = 0; a < 3; a++) {
+                offset[i][a] = (float) b.pivot()[a] + (b.parentIndex() >= 0 ? offset[b.parentIndex()][a] : 0);
+            }
+            Bone root = bones.get(rootOf[i]);
+            Anchor part = root.anchor() != null ? root.anchor() : anchor;
+            if (b.parentIndex() < 0) roots.computeIfAbsent(part, a -> new HashMap<>()).put(b.name(), parts[i]);
+            float[] m = box.computeIfAbsent(part, a -> new float[]{Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE,
+                -Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE});
+            for (Cube c : b.cubes()) {
+                for (int a = 0; a < 3; a++) {
+                    float g = (float) c.inflate() + grow;
+                    m[a] = Math.min(m[a], offset[i][a] + (float) c.origin()[a] - g);
+                    m[a + 3] = Math.max(m[a + 3], offset[i][a] + (float) (c.origin()[a] + c.size()[a]) + g);
+                }
+            }
         }
         List<Piece> pieces = new ArrayList<>();
-        roots.forEach((a, r) -> pieces.add(new Piece(a, new ModelPart(List.of(), r))));
+        roots.forEach((a, r) -> {
+            float[] m = box.get(a);
+            boolean empty = m[0] > m[3];
+            float[] center = empty ? new float[3] : new float[]{(m[0] + m[3]) / 2, (m[1] + m[4]) / 2, (m[2] + m[5]) / 2};
+            float[] half = empty ? new float[3] : new float[]{(m[3] - m[0]) / 2, (m[4] - m[1]) / 2, (m[5] - m[2]) / 2};
+            pieces.add(new Piece(a, new ModelPart(List.of(), r), center, half));
+        });
         return new Tree(List.copyOf(pieces), parts);
     }
 

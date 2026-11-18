@@ -12,9 +12,9 @@ import org.joml.Vector3f;
  * through walls) and configurable.
  *
  * <p>How: a flat panel facing the camera is placed just BEHIND the body part. The panel is the part's outline as
- * seen from the camera, grown by the glow's width, and drawn as a 3x3 grid (nine-slice) with a soft radial texture
- * on its border, so the fade has the same width on every side and has round corners. The body part hides the middle
- * of the panel; only the glow around its silhouette stays visible. Panels of neighbouring parts blend into one
+ * seen from the camera, grown by the glow's width, and drawn as the border of a 3x3 grid (nine-slice) with a soft
+ * radial texture, so the fade has the same width on every side and has round corners; the middle is left empty, so
+ * only the glow around the silhouette is visible. Panels of neighbouring parts blend into one
  * smooth glow instead of showing separate boxes.
  */
 final class AuraGlow {
@@ -84,6 +84,9 @@ final class AuraGlow {
         EDGES_B[3] = maxU + width;
         for (int col = 0; col < 3; col++) {
             for (int row = 0; row < 3; row++) {
+                // The middle cell would be a solid block where the shape is not (hollow cosmetics like crowns,
+                // or a box seen at an angle): only the border around the outline is drawn.
+                if (col == 1 && row == 1) continue;
                 // Both windings: the render type culls back faces, and menus mirror the view.
                 for (int side = 0; side < 2; side++) {
                     int c0 = side == 0 ? col : col + 1;

@@ -69,8 +69,18 @@ public final class OwnCosmetics {
     }
 
     public static void equip(CosmeticDefinition def) {
-        EquippedCosmetics.equip(ClientState.self(), def);
+        EquippedCosmetics.equip(ClientState.self(), def, null);
         markDirty(SAVE_DELAY_MS);
+    }
+
+    /** Changes the colour of a worn cosmetic (null = its default colour). */
+    public static void setColor(String id, Integer color) {
+        if (EquippedCosmetics.setColor(ClientState.self(), id, color)) markDirty(SAVE_DELAY_MS);
+    }
+
+    /** The colour chosen for a worn cosmetic, or null for its default. */
+    public static Integer color(String id) {
+        return EquippedCosmetics.color(ClientState.self(), id);
     }
 
     public static boolean unequip(String id) {
@@ -100,7 +110,7 @@ public final class OwnCosmetics {
         if (!dirty || saving || System.currentTimeMillis() < saveAt) return;
         dirty = false;
         saving = true;
-        List<String> ids = List.copyOf(EquippedCosmetics.get(ClientState.self()));
+        List<String> ids = List.copyOf(EquippedCosmetics.entries(ClientState.self())); // "id" or "id:rrggbb"
         ClientState.config().equipped = new ArrayList<>(ids);
         ClientState.saveConfig();
         UUID self = ClientState.self();

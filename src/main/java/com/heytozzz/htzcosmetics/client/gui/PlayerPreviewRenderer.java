@@ -1,6 +1,5 @@
 package com.heytozzz.htzcosmetics.client.gui;
 
-import com.heytozzz.htzcosmetics.client.render.BakedCosmetic;
 import com.heytozzz.htzcosmetics.client.render.CosmeticRenderUtil;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -62,9 +61,8 @@ public final class PlayerPreviewRenderer extends HtzPipRenderer<PlayerPreviewRen
             model.root().render(p, vertices, light, OverlayTexture.NO_OVERLAY);
         });
         model.resetPose(); // cosmetic anchors read the rest pose
-        for (BakedCosmetic c : state.cosmetics()) {
-            CosmeticRenderUtil.drawOnModel(model, c, pose, drawer::draw, state.seconds(), light, OverlayTexture.NO_OVERLAY);
-        }
+        CosmeticRenderUtil.drawOnModel(model, state.cosmetics(), pose, drawer::draw, state.seconds(), light,
+            OverlayTexture.NO_OVERLAY);
         pose.popPose();
     }
 

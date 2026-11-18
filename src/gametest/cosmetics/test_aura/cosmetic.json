@@ -19,5 +19,14 @@
     "outline": 1.2,
     "outlineStrength": 0.9,
     "fill": 0
+  },
+  "tint": {
+    "default": "#40E0FF",
+    "palette": [
+      "#40E0FF",
+      "#FF4040",
+      "#FFD24A"
+    ],
+    "free": false
   }
 }

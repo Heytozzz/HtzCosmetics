@@ -13,8 +13,10 @@ public record CosmeticDefinition(
     AssetRef model,
     AssetRef texture,
     Glow glow,
-    Aura aura
+    Aura aura,
+    Tint tint
 ) {
+    /* tint is null when players cannot change the colour. */
     /*
      * model and texture are null only for AURA cosmetics without a model; glow is null when the cosmetic does not
      * glow; aura is non-null exactly for AURA cosmetics.

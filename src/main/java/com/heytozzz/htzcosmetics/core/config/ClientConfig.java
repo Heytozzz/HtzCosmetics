@@ -12,14 +12,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Player options, stored in {@code config/htzcosmetics.json}. A damaged or hand-edited file never breaks the game:
  * unknown keys are ignored and anything invalid falls back to the default.
  */
 public final class ClientConfig {
-    private static final Pattern ID = Pattern.compile("[a-z0-9_]{1,32}");
     private static final int MAX_FILE_BYTES = 16 * 1024;
 
     /** See other players' cosmetics. */
@@ -48,10 +46,10 @@ public final class ClientConfig {
             config.sendChangeSignal = Json.boolOr(root, "sendChangeSignal", config.sendChangeSignal);
             config.receiveChangeSignal = Json.boolOr(root, "receiveChangeSignal", config.receiveChangeSignal);
             if (Json.has(root, "equipped")) {
-                for (Object v : Json.array(root, "equipped", 8)) {
-                    if (v instanceof String id && ID.matcher(id).matches() && !config.equipped.contains(id)) {
-                        config.equipped.add(id);
-                    }
+                java.util.Set<String> seen = new java.util.HashSet<>();
+                for (Object v : Json.array(root, "equipped", com.heytozzz.htzcosmetics.core.net.BackendClient.MAX_EQUIPPED)) {
+                    var entry = v instanceof String text ? com.heytozzz.htzcosmetics.core.net.EquippedEntry.parse(text) : null;
+                    if (entry != null && seen.add(entry.id())) config.equipped.add(entry.format());
                 }
             }
         } catch (IOException | ValidationException | RuntimeException e) {
@@ -70,7 +68,9 @@ public final class ClientConfig {
         sb.append("  \"equipped\": [");
         int written = 0;
         for (String id : equipped) {
-            if (!ID.matcher(id).matches() || written == 8) continue; // ids are [a-z0-9_]: no escaping needed
+            // "id" or "id:rrggbb" ([a-z0-9_:] only): no escaping needed
+            if (com.heytozzz.htzcosmetics.core.net.EquippedEntry.parse(id) == null
+                || written == com.heytozzz.htzcosmetics.core.net.BackendClient.MAX_EQUIPPED) continue;
             sb.append(written++ == 0 ? "" : ", ").append('"').append(id).append('"');
         }
         sb.append("]\n}\n");

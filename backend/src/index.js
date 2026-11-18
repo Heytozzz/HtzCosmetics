@@ -13,14 +13,15 @@
  *   POST   /v1/auth/certificate  {"uuid","challenge","publicKey","expiresAt",
  *                                 "keySignature","signature"}                   -> {"token","uuid","expiresIn"}
  *   GET    /v1/equipped?u=<uuid>,<uuid>,...[&fresh=1 with one uuid]             -> {"players":{"<uuid>":["id",...]}}
- *   PUT    /v1/me/equipped       {"ids":[...]}                           Bearer -> {"ok":true}
+ *   PUT    /v1/me/equipped       {"ids":["id" or "id:rrggbb", ...]}       Bearer -> {"ok":true}
  *   DELETE /v1/me                                                        Bearer -> {"ok":true}  (deletes the caller's data)
  */
 
 import { MOJANG_PLAYER_CERTIFICATE_KEYS } from "./mojang-keys.js";
 
 const UUID_RE = /^[0-9a-f]{32}$/;
-const ID_RE = /^[a-z0-9_]{1,32}$/;
+// A cosmetic id, optionally with the colour the player chose: "top_hat" or "top_hat:3070ff".
+const ID_RE = /^[a-z0-9_]{1,32}(:[0-9a-f]{6})?$/;
 const CHALLENGE_RE = /^[0-9a-f]{40}$/;
 const B64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
 
@@ -203,7 +204,14 @@ async function putEquipped(request, env) {
   const body = await readJson(request);
   if (!Array.isArray(body.ids) || body.ids.length > MAX_EQUIPPED) throw new HttpError(400, "bad_ids");
   for (const id of body.ids) requireString(id, ID_RE);
-  const ids = [...new Set(body.ids)];
+  // One entry per cosmetic (the first wins), whatever colour the duplicates ask for.
+  const seen = new Set();
+  const ids = body.ids.filter((e) => {
+    const id = e.split(":")[0];
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
 
   if (ids.length === 0) {
     // Nothing equipped: keep no data at all about this player.

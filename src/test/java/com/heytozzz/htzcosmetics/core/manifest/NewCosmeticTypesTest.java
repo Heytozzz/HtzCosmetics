@@ -98,6 +98,56 @@ class NewCosmeticTypesTest {
         assertEquals(1.0, g.pulseAt(123));
     }
 
+    @Test
+    void parsesTintAndDecidesWhichColoursAreAllowed() throws Exception {
+        Manifest m = parse(cosmetic("shirt", "SHIRT", "BODY", "COMMON", 2,
+            ",\"tint\":{\"default\":\"#D03040\",\"palette\":[\"#3070FF\"],\"free\":false}"));
+        Tint t = m.byId().get("shirt").tint();
+        assertEquals(0xD03040, t.defaultColor());
+        assertTrue(t.allows(0x3070FF));
+        assertFalse(t.allows(0x123456));                // not offered and no colour wheel
+        assertEquals(0xD03040, t.effective(0x123456));  // a forbidden request falls back to the default
+        assertEquals(0xD03040, t.effective(null));
+        assertTrue(t.glow());                           // default
+        Tint free = new Tint(0, new int[0], true, true);
+        assertTrue(free.allows(0x123456));
+    }
+
+    @Test
+    void rejectsBadTints() throws Exception {
+        Manifest m = parse(
+            cosmetic("a", "HEAD", "HEAD", "RARE", 2, ",\"tint\":{}"),                                   // no default
+            cosmetic("b", "HEAD", "HEAD", "RARE", 2, ",\"tint\":{\"default\":\"red\"}"),
+            cosmetic("c", "HEAD", "HEAD", "RARE", 2, ",\"tint\":{\"default\":\"#FFFFFF\",\"palette\":["
+                + "\"#000000\",".repeat(16) + "\"#000000\"]}"),                                        // 17 squares
+            cosmetic("d", "HEAD", "HEAD", "RARE", 1, ",\"tint\":{\"default\":\"#FFFFFF\"}"));         // minFormat 1
+        assertEquals(0, m.cosmetics().size());
+        assertEquals(4, m.skippedEntries());
+    }
+
+    @Test
+    void tintColoursOnlyGreyPixels() {
+        assertEquals(0xFF3070FF, Tint.apply(0xFFFFFFFF, 0x3070FF));  // white takes the colour
+        assertEquals(0xFF183880, Tint.apply(0xFF808080, 0x3070FF));  // grey: darker shade of it
+        assertEquals(0xFF000000, Tint.apply(0xFF000000, 0x3070FF));  // black stays black
+        assertEquals(0xFF6E4628, Tint.apply(0xFF6E4628, 0x3070FF));  // coloured pixels stay
+        assertEquals(0x00FFFFFF, Tint.apply(0x00FFFFFF, 0x3070FF));  // transparent stays
+    }
+
+    @Test
+    void equippedEntriesCarryAnOptionalColour() {
+        var plain = com.heytozzz.htzcosmetics.core.net.EquippedEntry.parse("top_hat");
+        assertEquals("top_hat", plain.id());
+        assertNull(plain.color());
+        var coloured = com.heytozzz.htzcosmetics.core.net.EquippedEntry.parse("top_hat:3070ff");
+        assertEquals(0x3070FF, coloured.color());
+        assertEquals("top_hat:3070ff", coloured.format());
+        for (String bad : new String[]{"top_hat:3070FF", "top_hat:3070f", "top_hat:", "../x", "a:b:c", "x".repeat(33),
+            "top_hat:#3070ff", ""}) {
+            assertNull(com.heytozzz.htzcosmetics.core.net.EquippedEntry.parse(bad), bad);
+        }
+    }
+
     private static CosmeticModel model(String bones) throws ValidationException {
         return ModelParser.parse(("{\"format\":2,\"texture\":{\"width\":64,\"height\":64},\"bones\":[" + bones + "]}")
             .getBytes(StandardCharsets.UTF_8));

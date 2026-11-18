@@ -20,6 +20,7 @@ import net.minecraft.client.renderer.entity.state.PlayerRenderState;
 import net.minecraft.client.renderer.MultiBufferSource;
 //?}
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
@@ -68,12 +69,14 @@ public final class CosmeticLayer extends RenderLayer<PlayerRenderState, PlayerMo
         CosmeticRenderUtil.AnchorPoser poser = CosmeticRenderUtil.onModel(model);
         boolean slim = CosmeticRenderUtil.slimArms(model);
         EnumSet<Category> drawn = EnumSet.noneOf(Category.class);
+        List<CosmeticRenderUtil.Worn> worn = new ArrayList<>(ids.size());
         for (String id : ids) {
             BakedCosmetic cosmetic = CosmeticLibrary.get().baked(id);
             if (cosmetic == null) continue; // not loaded yet, or rejected by validation
             if (!drawn.add(cosmetic.definition().category())) continue; // one per category
-            CosmeticRenderUtil.draw(cosmetic, pose, poser, sink, seconds, trigger, light, overlay, slim, false, false);
+            worn.add(new CosmeticRenderUtil.Worn(cosmetic, EquippedCosmetics.color(uuid, id)));
         }
+        CosmeticRenderUtil.drawWorn(worn, pose, poser, sink, seconds, trigger, light, overlay, slim, false);
     }
 
     /** Player options: hide others, hide own, and own cosmetics in first person (for first-person body mods). */

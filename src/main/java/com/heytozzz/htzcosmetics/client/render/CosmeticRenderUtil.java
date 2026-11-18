@@ -96,20 +96,70 @@ public final class CosmeticRenderUtil {
      * @param gui        true in menus (orthographic view), false in the world
      * @param silhouette draw a plain body under an aura (thumbnails, where no player is drawn)
      */
-    public static void draw(BakedCosmetic c, PoseStack pose, AnchorPoser poser, GeometrySink sink, float seconds,
-                            AnimationClip.Trigger trigger, int light, int overlay, boolean slim, boolean gui,
-                            boolean silhouette) {
-        Glow glow = c.definition().glow();
-        if (c.main() != null) drawModel(c, glow, pose, poser, sink, seconds, trigger, light, overlay);
+    public static void draw(BakedCosmetic c, Integer color, PoseStack pose, AnchorPoser poser, GeometrySink sink,
+                            float seconds, AnimationClip.Trigger trigger, int light, int overlay, boolean slim,
+                            boolean gui, boolean silhouette) {
+        Glow glow = TintCache.glow(c, color);
+        if (c.main() != null) drawModel(c, TintCache.texture(c, color), glow, pose, poser, sink, seconds, trigger, light, overlay);
         if (c.aura() != null && glow != null) {
             drawAura(c.aura().forArms(slim), c.definition().aura(), glow, pose, poser, sink, seconds, gui, silhouette);
         }
     }
 
-    private static void drawModel(BakedCosmetic c, Glow glow, PoseStack pose, AnchorPoser poser, GeometrySink sink,
-                                  float seconds, AnimationClip.Trigger trigger, int light, int overlay) {
+    /** One worn cosmetic and the colour its wearer chose (null = default). */
+    public record Worn(BakedCosmetic cosmetic, Integer color) {
+    }
+
+    /**
+     * Draws everything one player wears. An aura also glows around the other worn cosmetics (hats, wings...), so
+     * the whole outfit shines, not only the body.
+     */
+    public static void drawWorn(List<Worn> worn, PoseStack pose, AnchorPoser poser, GeometrySink sink, float seconds,
+                                AnimationClip.Trigger trigger, int light, int overlay, boolean slim, boolean gui) {
+        for (Worn w : worn) {
+            draw(w.cosmetic(), w.color(), pose, poser, sink, seconds, trigger, light, overlay, slim, gui, false);
+        }
+        for (Worn aura : worn) {
+            if (aura.cosmetic().aura() == null) continue;
+            Glow glow = TintCache.glow(aura.cosmetic(), aura.color());
+            if (glow == null) continue;
+            for (Worn other : worn) {
+                if (other.cosmetic().main() != null) {
+                    glowAround(other.cosmetic(), aura.cosmetic().definition().aura(), glow, pose, poser, sink, seconds, gui);
+                }
+            }
+        }
+    }
+
+    /** The aura's glow panels behind each piece of another cosmetic (its box at rest). */
+    private static void glowAround(BakedCosmetic c, Aura aura, Glow glow, PoseStack pose, AnchorPoser poser,
+                                   GeometrySink sink, float seconds, boolean gui) {
+        int bloom = glowColor(glow, seconds, glow.bloom());
+        int rim = glowColor(glow, seconds, aura.outlineStrength());
+        float bloomWidth = (float) glow.radius() / 16.0F;
+        float rimWidth = (float) aura.outline() / 16.0F;
+        for (CosmeticBaker.Piece piece : c.main().pieces()) {
+            if (piece.half()[0] <= 0 && piece.half()[1] <= 0) continue;
+            float[] half = {piece.half()[0] / 16.0F, piece.half()[1] / 16.0F, piece.half()[2] / 16.0F};
+            pose.pushPose();
+            if (poser.apply(pose, piece.anchor())) {
+                pose.translate(piece.center()[0] / 16.0F, piece.center()[1] / 16.0F, piece.center()[2] / 16.0F);
+                if (glow.bloom() > 0) {
+                    sink.draw(pose, glowPanel(GLOW_SOFT), (p, v) -> AuraGlow.write(p.last(), v, half, bloomWidth, gui, bloom));
+                }
+                if (aura.outline() > 0 && aura.outlineStrength() > 0) {
+                    sink.draw(pose, glowPanel(GLOW_RIM), (p, v) -> AuraGlow.write(p.last(), v, half, rimWidth, gui, rim));
+                }
+            }
+            pose.popPose();
+        }
+    }
+
+    private static void drawModel(BakedCosmetic c, ResourceLocation texture, Glow glow, PoseStack pose,
+                                  AnchorPoser poser, GeometrySink sink, float seconds, AnimationClip.Trigger trigger,
+                                  int light, int overlay) {
         boolean emissive = glow != null && glow.emissive();
-        RenderType type = emissive ? emissive(c.texture()) : renderType(c);
+        RenderType type = emissive ? emissive(texture) : c.translucent() ? translucent(texture) : cutout(texture);
         int mainLight = emissive ? FULL_BRIGHT : light;
         List<CosmeticBaker.Piece> pieces = c.main().pieces();
         for (int i = 0; i < pieces.size(); i++) {
@@ -175,23 +225,20 @@ public final class CosmeticRenderUtil {
     }
 
     /** Draws the cosmetic alone with its idle animation at {@code seconds}, pieces laid out like on a player. */
-    public static void drawIdle(BakedCosmetic c, PoseStack pose, GeometrySink sink, float seconds, int light, int overlay) {
+    public static void drawIdle(BakedCosmetic c, Integer color, PoseStack pose, GeometrySink sink, float seconds,
+                                int light, int overlay) {
         var anchor = c.definition().anchor();
-        draw(c, pose, (p, part) -> {
+        draw(c, color, pose, (p, part) -> {
             float[] o = CosmeticBaker.restOffset(part, anchor);
             p.translate(o[0] / 16.0F, o[1] / 16.0F, o[2] / 16.0F);
             return true;
         }, sink, seconds, AnimationClip.Trigger.IDLE, light, overlay, false, true, true);
     }
 
-    /** Draws the cosmetic attached to the body parts of a posed {@code model} (idle animation). */
-    public static void drawOnModel(PlayerModel model, BakedCosmetic c, PoseStack pose, GeometrySink sink,
+    /** Draws everything worn on the body parts of a posed {@code model} in a menu (idle animation). */
+    public static void drawOnModel(PlayerModel model, List<Worn> worn, PoseStack pose, GeometrySink sink,
                                    float seconds, int light, int overlay) {
-        draw(c, pose, onModel(model), sink, seconds, AnimationClip.Trigger.IDLE, light, overlay, slimArms(model), true, false);
-    }
-
-    static RenderType renderType(BakedCosmetic c) {
-        return c.translucent() ? translucent(c.texture()) : cutout(c.texture());
+        drawWorn(worn, pose, onModel(model), sink, seconds, AnimationClip.Trigger.IDLE, light, overlay, slimArms(model), true);
     }
 
     /** Entity render type with smooth transparency (skins, translucent cosmetics). */

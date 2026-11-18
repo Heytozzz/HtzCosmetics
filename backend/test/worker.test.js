@@ -159,6 +159,20 @@ describe("equipped", () => {
     for (const ids of [["../x"], ["UPPER"], ["a".repeat(33)], [1], "top_hat", Array(11).fill("a")]) {
       expect((await call("PUT", "/v1/me/equipped", { token, body: { ids } })).status).toBe(400);
     }
+    // Colours: exactly ":" + six lowercase hex digits (another player, so the write limit is not shared).
+    const other = await login("11111111111111111111111111111111");
+    for (const ids of [["hat:FF0000"], ["hat:ff00"], ["hat:ff0000:00"], ["hat:#ff0000"], ["hat:gg0000"]]) {
+      expect((await call("PUT", "/v1/me/equipped", { token: other, body: { ids } })).status).toBe(400);
+    }
+  });
+
+  it("stores chosen colours, one entry per cosmetic", async () => {
+    const player = "22222222222222222222222222222222";
+    const token = await login(player);
+    const body = { ids: ["top_hat:3070ff", "wings", "top_hat:ff0000"] };
+    expect((await call("PUT", "/v1/me/equipped", { token, body })).status).toBe(200);
+    const row = await baseEnv.DB.prepare("SELECT ids FROM equipped WHERE uuid = ?").bind(player).first("ids");
+    expect(JSON.parse(row)).toEqual(["top_hat:3070ff", "wings"]);
   });
 
   it("throttles rapid writes and stores nothing for an empty list", async () => {

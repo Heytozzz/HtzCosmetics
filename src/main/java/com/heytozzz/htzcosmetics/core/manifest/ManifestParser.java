@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
  *       "model":   { "sha256": "<64 hex>", "size": 1830 },
  *       "texture": { "sha256": "<64 hex>", "size": 912 },
  *       "glow": { ... }   (optional, see Glow; minFormat 2)
+ *       "tint": { ... }   (optional, see Tint: players may pick the colour; minFormat 2)
  *     }
  *     (AURA cosmetics, minFormat 2: "aura": { ... } and "glow" required, "model"/"texture" optional together)
  *   ]
@@ -123,7 +124,8 @@ public final class ManifestParser {
             if (category == null || rarity == null || anchor == null || !category.allows(anchor)) return null;
 
             // Content newer than format 1 must say so, so that older builds skip it instead of misreading it.
-            if (minFormat < 2 && (!category.inFormat1() || Json.has(obj, "glow") || Json.has(obj, "aura"))) return null;
+            if (minFormat < 2 && (!category.inFormat1() || Json.has(obj, "glow") || Json.has(obj, "aura")
+                || Json.has(obj, "tint"))) return null;
 
             Map<String, String> names = parseNames(Json.object(obj, "name"));
             boolean aura = category.isAura();
@@ -134,6 +136,7 @@ public final class ManifestParser {
                 texture = parseAsset(Json.object(obj, "texture"), Limits.MAX_TEXTURE_BYTES);
             }
             Glow glow = Json.has(obj, "glow") ? Glow.parse(Json.object(obj, "glow")) : null;
+            Tint tint = Json.has(obj, "tint") ? Tint.parse(Json.object(obj, "tint")) : null;
             Aura auraSpec = null;
             if (aura) {
                 if (glow == null) return null; // an aura's colours come from its glow
@@ -142,7 +145,8 @@ public final class ManifestParser {
                 return null;
             }
 
-            return new CosmeticDefinition(id, names, category, rarity, anchor, minFormat, model, texture, glow, auraSpec);
+            return new CosmeticDefinition(id, names, category, rarity, anchor, minFormat, model, texture, glow, auraSpec,
+                tint);
         } catch (ValidationException e) {
             return null;
         }

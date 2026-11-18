@@ -34,6 +34,7 @@ política de código) y `cd backend && npm test`.
 | ✔ | Modelos: máx. 32 huesos, 256 cubos, coordenadas y tamaños acotados | `ModelParser`, `Limits` | `ModelParserTest` |
 | ✔ | Animaciones: máx. 8 clips, 64 keyframes por canal, 4096 en total, duración 0,05–60 s, valores acotados | `AnimationParser`, `Limits` | `AnimationParserTest` |
 | ✔ | Glow y aura: solo colores `#RRGGBB` (máx. 8) y números acotados (ciclo 0,25–60 s, bloom 0–1, radio ≤ 8 px, contorno ≤ 3 px, opacidad 0–1); van dentro del manifiesto firmado | `core/manifest/Glow`, `Aura` | `NewCosmeticTypesTest` |
+| ✔ | Colores elegidos: cada entrada guardada es `id` o `id:rrggbb` (exactamente 6 dígitos hexadecimales en minúscula), validada en el mod y en el servidor; un color no permitido por el cosmético se ignora y se usa el color por defecto | `EquippedEntry`, `Tint`, `backend/src/index.js` | `NewCosmeticTypesTest`, `backend/test` |
 | ✔ | Ropa: cada grupo solo puede seguir las partes del cuerpo que permite su categoría; el contenido nuevo lleva `minFormat` 2 para que versiones antiguas del mod lo ignoren en vez de leerlo mal | `ModelParser.checkAnchors`, `ManifestParser` | `NewCosmeticTypesTest`, `ClothingConverterTest` |
 | ✔ | Tamaños: manifiesto 512 KB, modelo 128 KB, textura 256 KB, firma 256 B; máx. 2000 cosméticos | `Limits` | varias |
 

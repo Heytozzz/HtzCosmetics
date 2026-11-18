@@ -19,7 +19,8 @@ En el editor también tienes:
 - **Categorías**: Cabeza, Collar, Hombro, Espalda, Camisa, Abrigo, Cintura, Pantalón, Zapatos y Aura. Bajo los botones se explica a qué partes del cuerpo puede ir cada una.
 - **Ropa que sigue a varias partes** (camisa, abrigo, pantalón, zapatos…): en Blockbench, pon a cada grupo principal el nombre de la parte del cuerpo (`left_arm`, `right_arm`, `left_leg`, `right_leg`, `body`, `head`; también vale en español, como `brazo_izquierdo` o `pierna_derecha`). Al cargar el modelo, el editor muestra **«Grupos principales y la parte que siguen»**: así compruebas que las mangas van con los brazos. La vista previa la enseña puesta sobre un jugador gris.
 - **7. Brillo** (opcional, cualquier categoría): pulsa **Con brillo** y elige de 1 a 8 colores (clic en un color para cambiarlo, × para quitarlo, **+ Color** para añadir otro). Con varios colores, se mezclan en bucle según el **Ciclo de color**. **Brillo propio** hace que se vea a plena luz también de noche (con shaders, además brilla). **Intensidad** y **Tamaño del halo** controlan el resplandor de color alrededor. **Pulso → Respirar** lo hace latir. La vista previa enseña un brillo aproximado.
-- **Aura**: un efecto de color alrededor de todo el jugador, **sin modelo ni textura**. Al elegir Aura se ocultan los archivos y el brillo se activa solo (sus colores son los del aura). En **8. Aura** eliges el **Relleno** (luz suave sobre el cuerpo) y el **Contorno** (borde de color).
+- **Aura**: un efecto de color alrededor de todo el jugador, **sin modelo ni textura**. Al elegir Aura se ocultan los archivos y el brillo se activa solo (sus colores son los del aura). En **8. Aura** eliges el **Ancho del borde** y la **Fuerza del borde** (el borde brillante pegado a la silueta) y el **Relleno** (luz suave sobre el cuerpo; por defecto, ninguna). El halo ancho sale de **Intensidad** y **Tamaño del halo**, en «Brillo».
+- **Color elegible por el jugador** (opcional): pulsa **Sí, el jugador elige**, pon el **color por defecto** y añade a la **paleta** los colores que podrá escoger (hasta 16). Marca **Permitir cualquier color (rueda)** para dejarle elegir cualquiera, y **El brillo/aura también cambia de color** para que el brillo siga su elección (en las auras, así elige el color del aura). Solo cambian las partes **blancas o grises** de la textura; con **Probar color**, bajo la vista previa, ves cómo queda cada color. Si nada de la textura es blanco o gris, el editor te avisa.
 - Si algo no vale (por ejemplo, un pulso de menos de 0,25 s escrito a mano en `cosmetic.json`), **Comprobar** te lo explica en español.
 
 Abajo está el **registro**, donde ves lo que hace cada acción. Abajo a la izquierda se ve cuántos días faltan para que caduque la firma.
@@ -97,6 +98,18 @@ Ejemplo de `cosmetic.json`:
   - El halo ancho y difuso usa `bloom` (intensidad) y `radius` (amplitud, hasta 8 píxeles) del bloque `glow`.
 
   Un aura no necesita `model.bbmodel` ni `texture.png`: basta con `cosmetic.json`.
+- `tint` (opcional, cualquier categoría): permite que cada jugador **elija el color** del cosmético en el guardarropa. Se colorean las partes de la textura que sean **blancas o grises** (cuanto más clara, más vivo el color; el negro se queda negro); las partes de otros colores no cambian. Así que pinta en blanco/gris claro lo que quieras que se pueda colorear.
+
+  ```json
+  "tint": { "default": "#3070FF", "palette": ["#3070FF", "#FF4040", "#40C060"], "free": true, "glow": true }
+  ```
+
+  - `default`: color que lleva hasta que el jugador elige otro (obligatorio).
+  - `palette`: colores que se ofrecen como cuadraditos (hasta 16; opcional).
+  - `free`: `true` añade una rueda de colores para elegir cualquier color (por defecto `false`: solo los de la paleta).
+  - `glow`: `true` (por defecto) hace que el brillo/aura también tome el color elegido. Para un aura, el `tint` sirve para que cada jugador elija el color de su aura.
+
+  En el juego, sobre la tarjeta de un cosmético equipado que admite color aparece un cuadradito con su color: al pulsarlo se abre la ventana de color (también desde «Equipados»). Si alguien manda un color que no está permitido, los demás le ven el color por defecto.
 - `name`: el nombre en inglés (`en_us`) es obligatorio. Cada nombre puede tener hasta 48 caracteres.
 
 ### Reglas al modelar en Blockbench

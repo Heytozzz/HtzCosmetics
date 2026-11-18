@@ -2,6 +2,7 @@ package com.heytozzz.htzcosmetics.client.render;
 
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
 import com.heytozzz.htzcosmetics.core.model.AnimationClip;
+import com.heytozzz.htzcosmetics.core.png.DecodedImage;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.resources.ResourceLocation;
 
@@ -17,10 +18,11 @@ import java.util.List;
  * @param center     model bounding-box center in model pixels (for thumbnails)
  * @param size       largest bounding-box side in model pixels (for thumbnails)
  * @param aura       boxes drawn around the body for AURA cosmetics, else null
+ * @param tintSource the validated texture pixels, kept only for cosmetics whose colour players can change
  */
 public record BakedCosmetic(CosmeticDefinition definition, CosmeticBaker.Tree main, List<CosmeticBaker.Tree> bloom,
                             List<AnimationClip> animations, ResourceLocation texture, boolean translucent,
-                            float[] center, float size, AuraModel.Geometry aura) {
+                            float[] center, float size, AuraModel.Geometry aura, DecodedImage tintSource) {
 
     private static final ModelPart[] NO_BONES = new ModelPart[0];
 

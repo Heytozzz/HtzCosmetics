@@ -8,6 +8,7 @@ import com.heytozzz.htzcosmetics.core.json.StrictJsonParser;
 import com.heytozzz.htzcosmetics.core.manifest.Anchor;
 import com.heytozzz.htzcosmetics.core.manifest.Aura;
 import com.heytozzz.htzcosmetics.core.manifest.Glow;
+import com.heytozzz.htzcosmetics.core.manifest.Tint;
 import com.heytozzz.htzcosmetics.core.manifest.Category;
 import com.heytozzz.htzcosmetics.core.manifest.Manifest;
 import com.heytozzz.htzcosmetics.core.manifest.ManifestParser;
@@ -158,6 +159,7 @@ public final class SiteBuilder {
         Map<String, Object> names;
         Glow glow = null;
         Aura aura = null;
+        Tint tint = null;
         try {
             info = Json.asObject(StrictJsonParser.parse(Files.readAllBytes(infoFile), 64 * 1024), "cosmetic.json");
             category = parseEnum(Category.values(), Json.string(info, "category", 32), label, "category");
@@ -173,6 +175,7 @@ public final class SiteBuilder {
                 if (!category.isAura()) throw new ValidationException("\"aura\" is only for the AURA category");
                 aura = Aura.parse(Json.object(info, "aura"));
             }
+            if (Json.has(info, "tint")) tint = Tint.parse(Json.object(info, "tint"));
             if (category.isAura() && glow == null) {
                 throw new ValidationException("AURA cosmetics need a \"glow\" block (its colours colour the aura)");
             }
@@ -200,10 +203,11 @@ public final class SiteBuilder {
         entry.put("category", category.name());
         entry.put("rarity", rarity.name());
         entry.put("anchor", anchor.name());
-        boolean newFormat = !category.inFormat1() || glow != null || aura != null;
+        boolean newFormat = !category.inFormat1() || glow != null || aura != null || tint != null;
         if (withModel) newFormat |= addModel(label, folder, category, anchor, entry, assets, warnings);
         entry.put("minFormat", newFormat ? 2 : 1); // 2 = older mod builds skip it instead of misreading it
         if (glow != null) entry.put("glow", glowJson(glow));
+        if (tint != null) entry.put("tint", tintJson(tint));
         if (category.isAura()) {
             Aura a = aura != null ? aura : Aura.DEFAULT;
             Map<String, Object> auraJson = new LinkedHashMap<>();
@@ -214,7 +218,7 @@ public final class SiteBuilder {
         }
         // Keep a stable key order: id, name, category, rarity, anchor, minFormat, model, texture, glow, aura.
         Map<String, Object> ordered = new LinkedHashMap<>();
-        for (String k : List.of("id", "name", "category", "rarity", "anchor", "minFormat", "model", "texture", "glow", "aura")) {
+        for (String k : List.of("id", "name", "category", "rarity", "anchor", "minFormat", "model", "texture", "glow", "aura", "tint")) {
             if (entry.containsKey(k)) ordered.put(k, entry.get(k));
         }
         entry = ordered;
@@ -286,6 +290,17 @@ public final class SiteBuilder {
         entry.put("model", assetRef(modelBytes, assets));
         entry.put("texture", assetRef(texture, assets));
         return model.format() >= 2;
+    }
+
+    private static Map<String, Object> tintJson(Tint t) {
+        List<String> palette = new ArrayList<>();
+        for (int c : t.palette()) palette.add(String.format("#%06X", c));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("default", String.format("#%06X", t.defaultColor()));
+        out.put("palette", palette);
+        out.put("free", t.free());
+        out.put("glow", t.glow());
+        return out;
     }
 
     /** Only the known, validated fields (in a fixed order) go into the signed manifest. */

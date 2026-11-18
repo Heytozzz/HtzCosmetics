@@ -5,6 +5,7 @@ import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
 import com.heytozzz.htzcosmetics.client.EquippedCosmetics;
 import com.heytozzz.htzcosmetics.client.OwnCosmetics;
 import com.heytozzz.htzcosmetics.client.render.BakedCosmetic;
+import com.heytozzz.htzcosmetics.client.render.CosmeticRenderUtil;
 import com.heytozzz.htzcosmetics.core.manifest.Category;
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
 import com.heytozzz.htzcosmetics.core.manifest.Rarity;
@@ -66,6 +67,18 @@ public final class CosmeticsScreen extends Screen {
     private int page;
     private EditBox search;
     private boolean equippedWindow;
+    /** Id of the cosmetic whose colour window is open, or null. */
+    private String colorFor;
+    // Colour wheel state (hue 0-1, saturation 0-1, brightness 0-1) and which part is being dragged.
+    private float wheelHue;
+    private float wheelSat;
+    private float wheelVal = 1.0F;
+    private boolean draggingWheel;
+    private boolean draggingValue;
+    private int wheelX;
+    private int wheelY;
+    private int valueX;
+    private static final int WHEEL_R = 30;
     private String highlightId;
     private long highlightUntil;
     private PreviewMode previewMode = PreviewMode.FRONT;
@@ -177,7 +190,7 @@ public final class CosmeticsScreen extends Screen {
 
         regions.clear();
         g.fill(0, 0, width, height, BG);
-        boolean modal = equippedWindow;
+        boolean modal = modalOpen();
         int mx = modal ? -1 : mouseX;
         int my = modal ? -1 : mouseY;
 
@@ -190,7 +203,8 @@ public final class CosmeticsScreen extends Screen {
         if (modal) {
             regions.clear(); // only the window is clickable while it is open
             g.nextStratum();
-            drawEquippedWindow(g, mouseX, mouseY);
+            if (colorFor != null) drawColorWindow(g, mouseX, mouseY);
+            else drawEquippedWindow(g, mouseX, mouseY);
         }
     }
 
@@ -368,7 +382,8 @@ public final class CosmeticsScreen extends Screen {
         BakedCosmetic baked = CosmeticLibrary.get().baked(def.id());
         if (baked != null) {
             float spin = hover ? (seconds * 90) % 360 : 30 + (float) Math.sin(seconds * 0.8) * 20;
-            thumbs.add(new ThumbnailsRenderState.Thumb(baked, x + cardW / 2, y + cardW / 2, cardW - 6, spin));
+            thumbs.add(new ThumbnailsRenderState.Thumb(baked, worn ? OwnCosmetics.color(def.id()) : null,
+                x + cardW / 2, y + cardW / 2, cardW - 6, spin));
         }
 
         String name = font.plainSubstrByWidth(def.displayName(lang()), cardW - 8);
@@ -393,6 +408,16 @@ public final class CosmeticsScreen extends Screen {
             if (OwnCosmetics.isEquipped(def.id())) OwnCosmetics.unequip(def.id());
             else OwnCosmetics.equip(def);
         }, "card:" + def.id()));
+        if (worn && def.tint() != null) {
+            // Colour square in the thumbnail's bottom-right corner: opens the colour window (added last: on top).
+            int sx = x + cardW - 13;
+            int sy = y + cardW - 13;
+            boolean sHover = mx >= sx && mx < sx + 11 && my >= sy && my < sy + 11;
+            g.fill(sx, sy, sx + 11, sy + 11, sHover ? TEXT : 0xFF0E1015);
+            g.fill(sx + 1, sy + 1, sx + 10, sy + 10, 0xFF000000 | def.tint().effective(OwnCosmetics.color(def.id())));
+            if (sHover) g.setTooltipForNextFrame(font, Component.translatable("htzcosmetics.color.change"), mx, my);
+            regions.add(new Region(sx, sy, 11, 11, () -> openColorWindow(def.id()), "color:" + def.id()));
+        }
     }
 
     private void drawPreview(GuiGraphics g, int mx, int my) {
@@ -403,11 +428,13 @@ public final class CosmeticsScreen extends Screen {
         if (skin != null) {
             var playerSkin = skin.get();
             var model = playerSkin.slim() ? slimModel : wideModel;
-            List<BakedCosmetic> worn = new ArrayList<>();
+            List<CosmeticRenderUtil.Worn> worn = new ArrayList<>();
             java.util.EnumSet<Category> used = java.util.EnumSet.noneOf(Category.class);
             for (String id : EquippedCosmetics.get(ClientState.self())) {
                 BakedCosmetic b = CosmeticLibrary.get().baked(id);
-                if (b != null && used.add(b.definition().category())) worn.add(b);
+                if (b != null && used.add(b.definition().category())) {
+                    worn.add(new CosmeticRenderUtil.Worn(b, OwnCosmetics.color(id)));
+                }
             }
             float seconds = (System.currentTimeMillis() % 3_600_000L) / 1000.0F;
             g.guiRenderState.submitPicturesInPictureState(PlayerPreviewRenderState.of(model, playerSkin.texture(), worn,
@@ -511,9 +538,197 @@ public final class CosmeticsScreen extends Screen {
                 Component go = Component.translatable("htzcosmetics.screen.go");
                 int gw = font.width(go) + 10;
                 chip(g, bx - 4 - gw, ry + 5, go, TEXT, false, mx, my, () -> goTo(def), "window:go:" + id);
+                if (def.tint() != null) {
+                    int sx = bx - 4 - gw - 18;
+                    boolean sHover = mx >= sx && mx < sx + 14 && my >= ry + 5 && my < ry + 19;
+                    g.fill(sx, ry + 5, sx + 14, ry + 19, sHover ? TEXT : 0xFF0E1015);
+                    g.fill(sx + 1, ry + 6, sx + 13, ry + 18, 0xFF000000 | def.tint().effective(OwnCosmetics.color(id)));
+                    regions.add(new Region(sx, ry + 5, 14, 14, () -> openColorWindow(id), "window:color:" + id));
+                }
             }
             ry += rowH;
         }
+    }
+
+    /** Opens the colour window for a worn cosmetic whose colour players may change. */
+    public void openColorWindow(String id) {
+        CosmeticDefinition def = CosmeticLibrary.get().definition(id);
+        if (def == null || def.tint() == null || !OwnCosmetics.isEquipped(id)) return;
+        equippedWindow = false;
+        colorFor = id;
+        float[] hsv = toHsv(def.tint().effective(OwnCosmetics.color(id)));
+        wheelHue = hsv[0];
+        wheelSat = hsv[1];
+        wheelVal = hsv[2];
+    }
+
+    public String colorWindowFor() {
+        return colorFor;
+    }
+
+    /** Centre of the colour wheel in the last frame (GUI coordinates), for the automated in-game test. */
+    public int[] wheelCenter() {
+        return new int[]{wheelX, wheelY};
+    }
+
+    private void drawColorWindow(GuiGraphics g, int mx, int my) {
+        CosmeticDefinition def = CosmeticLibrary.get().definition(colorFor);
+        if (def == null || def.tint() == null || !OwnCosmetics.isEquipped(colorFor)) {
+            colorFor = null;
+            return;
+        }
+        var tint = def.tint();
+        Integer chosen = OwnCosmetics.color(colorFor);
+        int current = tint.effective(chosen);
+        g.fill(0, 0, width, height, 0xB0000000);
+
+        int sw = 16; // swatch size
+        int perRow = 8;
+        int swatches = 1 + tint.palette().length;
+        int rows = (swatches + perRow - 1) / perRow;
+        int w = Math.min(260, width - 40);
+        int h = 30 + rows * (sw + 4) + 8 + (tint.free() ? WHEEL_R * 2 + 26 : 0) + 6;
+        int x = (width - w) / 2;
+        int y = (height - h) / 2;
+        panel(g, x, y, w, h);
+        g.fill(x + 1, y + 1, x + w - 1, y + 20, CHIP);
+        g.drawString(font, font.plainSubstrByWidth(
+            Component.translatable("htzcosmetics.color.title", def.displayName(lang())).getString(), w - 30), x + 8, y + 6, TEXT, false);
+        int cx = x + w - 16;
+        boolean closeHover = mx >= cx && mx < cx + 12 && my >= y + 4 && my < y + 16;
+        g.drawString(font, "×", cx + 3, y + 6, closeHover ? TEXT : TEXT_DIM, false);
+        regions.add(new Region(cx, y + 2, 14, 16, () -> colorFor = null, "color:close"));
+
+        // Swatches: the default colour first (marked), then the palette.
+        int sx0 = x + 10;
+        int sy = y + 28;
+        for (int i = 0; i < swatches; i++) {
+            int rgb = i == 0 ? tint.defaultColor() : tint.palette()[i - 1];
+            int px = sx0 + (i % perRow) * (sw + 4);
+            int py = sy + (i / perRow) * (sw + 4);
+            boolean selected = i == 0 ? chosen == null : chosen != null && chosen == rgb;
+            boolean hover = mx >= px && mx < px + sw && my >= py && my < py + sw;
+            g.fill(px - 1, py - 1, px + sw + 1, py + sw + 1, selected ? ACCENT : hover ? TEXT : 0xFF0E1015);
+            g.fill(px + 1, py + 1, px + sw - 1, py + sw - 1, 0xFF000000 | rgb);
+            if (i == 0) g.drawString(font, "★", px + 4, py + 4, contrast(rgb), false);
+            if (hover) {
+                g.setTooltipForNextFrame(font, i == 0 ? Component.translatable("htzcosmetics.color.default")
+                    : Component.literal(String.format("#%06X", rgb)), mx, my);
+            }
+            Integer value = i == 0 ? null : rgb;
+            regions.add(new Region(px, py, sw, sw, () -> {
+                OwnCosmetics.setColor(colorFor, value);
+                float[] hsv = toHsv(value == null ? tint.defaultColor() : value);
+                wheelHue = hsv[0];
+                wheelSat = hsv[1];
+                wheelVal = hsv[2];
+            }, "color:swatch:" + i));
+        }
+
+        if (tint.free()) {
+            int top = sy + rows * (sw + 4) + 6;
+            g.drawString(font, Component.translatable("htzcosmetics.color.custom"), x + 10, top, TEXT_DIM, false);
+            wheelX = x + 10 + WHEEL_R;
+            wheelY = top + 12 + WHEEL_R;
+            // The wheel: hue around, saturation outwards, at the current brightness (2x2 pixel cells).
+            for (int dy = -WHEEL_R; dy < WHEEL_R; dy += 2) {
+                for (int dx = -WHEEL_R; dx < WHEEL_R; dx += 2) {
+                    float r = (float) Math.sqrt((dx + 1) * (dx + 1) + (dy + 1) * (dy + 1)) / WHEEL_R;
+                    if (r > 1) continue;
+                    float hue = (float) ((Math.atan2(dy + 1, dx + 1) / (2 * Math.PI) + 1) % 1);
+                    g.fill(wheelX + dx, wheelY + dy, wheelX + dx + 2, wheelY + dy + 2, 0xFF000000 | hsv(hue, r, wheelVal));
+                }
+            }
+            // Marker for the current hue/saturation.
+            int mxk = wheelX + Math.round((float) Math.cos(wheelHue * 2 * Math.PI) * wheelSat * WHEEL_R);
+            int myk = wheelY + Math.round((float) Math.sin(wheelHue * 2 * Math.PI) * wheelSat * WHEEL_R);
+            GuiCompat.outline(g, mxk - 2, myk - 2, 5, 5, wheelVal > 0.5F ? 0xFF000000 : 0xFFFFFFFF);
+            // Brightness bar.
+            valueX = wheelX + WHEEL_R + 12;
+            int top2 = wheelY - WHEEL_R;
+            for (int i = 0; i < WHEEL_R * 2; i += 2) {
+                float v = 1 - i / (float) (WHEEL_R * 2);
+                g.fill(valueX, top2 + i, valueX + 10, top2 + i + 2, 0xFF000000 | hsv(wheelHue, wheelSat, v));
+            }
+            int vy = top2 + Math.round((1 - wheelVal) * (WHEEL_R * 2 - 1));
+            g.fill(valueX - 2, vy, valueX + 12, vy + 1, 0xFFFFFFFF);
+            // Current colour.
+            int px = valueX + 22;
+            g.fill(px, top2, px + 30, top2 + 30, 0xFF0E1015);
+            g.fill(px + 1, top2 + 1, px + 29, top2 + 29, 0xFF000000 | current);
+            g.drawString(font, String.format("#%06X", current), px, top2 + 36, TEXT_DIM, false);
+        }
+    }
+
+    /**
+     * Click or drag on the colour wheel or the brightness bar.
+     *
+     * @param start true for the initial click (starts a drag), false while dragging
+     */
+    private boolean pickColorAt(double mx, double my, boolean start) {
+        CosmeticDefinition def = CosmeticLibrary.get().definition(colorFor);
+        if (def == null || def.tint() == null || !def.tint().free()) return false;
+        double dx = mx - wheelX;
+        double dy = my - wheelY;
+        boolean onWheel = dx * dx + dy * dy <= (WHEEL_R + 1) * (WHEEL_R + 1);
+        boolean onValue = mx >= valueX - 2 && mx < valueX + 12 && my >= wheelY - WHEEL_R - 2 && my < wheelY + WHEEL_R + 2;
+        if (start) {
+            draggingWheel = onWheel;
+            draggingValue = !onWheel && onValue;
+        }
+        if (draggingWheel) {
+            wheelHue = (float) ((Math.atan2(dy, dx) / (2 * Math.PI) + 1) % 1);
+            wheelSat = (float) Math.min(1, Math.sqrt(dx * dx + dy * dy) / WHEEL_R);
+        } else if (draggingValue) {
+            wheelVal = (float) Math.max(0, Math.min(1, 1 - (my - (wheelY - WHEEL_R)) / (WHEEL_R * 2)));
+        } else {
+            return false;
+        }
+        OwnCosmetics.setColor(colorFor, hsv(wheelHue, wheelSat, wheelVal));
+        return true;
+    }
+
+    private static int hsv(float h, float s, float v) {
+        float r;
+        float g;
+        float b;
+        int i = (int) Math.floor(h * 6) % 6;
+        float f = h * 6 - (float) Math.floor(h * 6);
+        float p = v * (1 - s);
+        float q = v * (1 - f * s);
+        float t = v * (1 - (1 - f) * s);
+        switch (i) {
+            case 0 -> { r = v; g = t; b = p; }
+            case 1 -> { r = q; g = v; b = p; }
+            case 2 -> { r = p; g = v; b = t; }
+            case 3 -> { r = p; g = q; b = v; }
+            case 4 -> { r = t; g = p; b = v; }
+            default -> { r = v; g = p; b = q; }
+        }
+        return Math.round(r * 255) << 16 | Math.round(g * 255) << 8 | Math.round(b * 255);
+    }
+
+    private static float[] toHsv(int rgb) {
+        float r = (rgb >> 16 & 255) / 255F;
+        float g = (rgb >> 8 & 255) / 255F;
+        float b = (rgb & 255) / 255F;
+        float max = Math.max(r, Math.max(g, b));
+        float min = Math.min(r, Math.min(g, b));
+        float d = max - min;
+        float h = 0;
+        if (d > 0) {
+            if (max == r) h = ((g - b) / d) % 6;
+            else if (max == g) h = (b - r) / d + 2;
+            else h = (r - g) / d + 4;
+            h = (h / 6 + 1) % 1;
+        }
+        return new float[]{h, max == 0 ? 0 : d / max, max};
+    }
+
+    /** Black or white, whichever reads better on {@code rgb}. */
+    private static int contrast(int rgb) {
+        int lum = ((rgb >> 16 & 255) * 3 + (rgb >> 8 & 255) * 6 + (rgb & 255)) / 10;
+        return lum > 140 ? 0xFF000000 : 0xFFFFFFFF;
     }
 
     /** Opens the "Equipped" window (also used by the automated in-game test). */
@@ -629,7 +844,7 @@ public final class CosmeticsScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (handleZoom(mouseX, mouseY, scrollY)) return true;
-        if (!equippedWindow && mouseX >= gridX && mouseX < gridX + gridW) {
+        if (!modalOpen() && mouseX >= gridX && mouseX < gridX + gridW) {
             page = Math.max(0, page - (int) Math.signum(scrollY));
             return true;
         }
@@ -643,16 +858,26 @@ public final class CosmeticsScreen extends Screen {
         // Named constants: mouse button numbers differ between versions (26.3 uses SDL numbering).
         if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && handleClick(mx, my)) return true;
         if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT && handleRightClick(mx, my)) return true;
-        return equippedWindow;
+        return modalOpen();
     }
 
     private void onMouseReleased() {
         draggingPreview = false;
         panningPreview = false;
+        draggingWheel = false;
+        draggingValue = false;
+    }
+
+    private boolean modalOpen() {
+        return equippedWindow || colorFor != null;
     }
 
     private boolean onKeyPressed(int keyCode) {
-        if (keyCode == 256 && equippedWindow) { // Escape closes the window first
+        if (keyCode == 256 && colorFor != null) { // Escape closes the window first
+            colorFor = null;
+            return true;
+        }
+        if (keyCode == 256 && equippedWindow) {
             equippedWindow = false;
             return true;
         }
@@ -660,6 +885,7 @@ public final class CosmeticsScreen extends Screen {
     }
 
     private boolean handleClick(double mx, double my) {
+        if (colorFor != null && pickColorAt(mx, my, true)) return true;
         for (int i = regions.size() - 1; i >= 0; i--) {
             Region r = regions.get(i);
             if (r.contains(mx, my)) {
@@ -667,8 +893,9 @@ public final class CosmeticsScreen extends Screen {
                 return true;
             }
         }
-        if (equippedWindow) {
+        if (modalOpen()) {
             equippedWindow = false; // click outside the window closes it
+            colorFor = null;
             return true;
         }
         if (mx >= previewX && mx < previewX + previewW && my >= bodyY && my < bodyBottom - 64) {
@@ -683,13 +910,14 @@ public final class CosmeticsScreen extends Screen {
     }
 
     private boolean handleRightClick(double mx, double my) {
-        if (equippedWindow || !inPreviewArea(mx, my)) return false;
+        if (modalOpen() || !inPreviewArea(mx, my)) return false;
         panningPreview = true;
         return true;
     }
 
     private boolean handleDrag(double mx, double my, double dx, double dy) {
-        if (equippedWindow) return false;
+        if (colorFor != null) return (draggingWheel || draggingValue) && pickColorAt(mx, my, false);
+        if (modalOpen()) return false;
         if (panningPreview) {
             float limitX = previewW * zoom / 2;
             float limitY = (bodyBottom - bodyY) * zoom / 2;
@@ -706,7 +934,7 @@ public final class CosmeticsScreen extends Screen {
 
     /** Mouse wheel over the preview zooms in and out (1x to 6x). */
     private boolean handleZoom(double mx, double my, double amount) {
-        if (equippedWindow || !inPreviewArea(mx, my) || amount == 0) return false;
+        if (modalOpen() || !inPreviewArea(mx, my) || amount == 0) return false;
         float newZoom = (float) Math.max(1.0, Math.min(MAX_ZOOM, zoom * Math.pow(1.2, amount)));
         // Keep the point under the cursor where it is: pan' = m - (m - pan) * zoom' / zoom,
         // with m the cursor relative to the middle of the preview area.

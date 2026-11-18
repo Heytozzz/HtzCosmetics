@@ -4,5 +4,15 @@
     "es_es": "Camisa de prueba"
   },
   "category": "SHIRT",
-  "rarity": "COMMON"
+  "rarity": "COMMON",
+  "tint": {
+    "default": "#D03040",
+    "palette": [
+      "#D03040",
+      "#3070FF",
+      "#40C060",
+      "#F0C030"
+    ],
+    "free": true
+  }
 }

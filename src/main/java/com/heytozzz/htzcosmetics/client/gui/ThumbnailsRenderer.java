@@ -53,7 +53,7 @@ public final class ThumbnailsRenderer extends HtzPipRenderer<ThumbnailsRenderSta
             pose.mulPose(Axis.XP.rotationDegrees(TILT_DEGREES));
             pose.mulPose(Axis.YP.rotationDegrees(180.0F + thumb.yawDegrees()));
             pose.translate(-c.center()[0] / 16.0F, -c.center()[1] / 16.0F, -c.center()[2] / 16.0F);
-            CosmeticRenderUtil.drawIdle(c, pose, drawer::draw, state.seconds(), LightTexture.FULL_BRIGHT,
+            CosmeticRenderUtil.drawIdle(c, thumb.color(), pose, drawer::draw, state.seconds(), LightTexture.FULL_BRIGHT,
                 OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }

@@ -150,7 +150,39 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
                 context.setScreen(() -> new CosmeticsScreen(null));
                 context.waitTicks(10);
                 context.takeScreenshot("htz_new_types_preview");
+
+                // Colours: pick a palette square for the shirt, then a point on the colour wheel, with real clicks.
+                context.runOnClient(mc -> ((CosmeticsScreen) mc.screen).openColorWindow("test_shirt"));
+                context.waitTicks(3);
+                click(context, "color:swatch:2"); // third square: #3070FF
+                context.waitTicks(3);
+                check(context, mc -> Integer.valueOf(0x3070FF).equals(OwnCosmetics.color("test_shirt")),
+                    "clicking a colour square colours the cosmetic");
+                context.takeScreenshot("htz_color_window");
+                int[] wheel = context.computeOnClient(mc -> {
+                    int[] w = ((CosmeticsScreen) mc.screen).wheelCenter();
+                    return new int[]{w[0] + 20, w[1]}; // to the right of the centre: a red, fairly saturated
+                });
+                clickAt(context, wheel[0], wheel[1]);
+                context.waitTicks(3);
+                check(context, mc -> {
+                    Integer c = OwnCosmetics.color("test_shirt");
+                    return c != null && (c >> 16 & 255) > 200 && (c & 255) < 150;
+                }, "the colour wheel picks a custom colour");
+                context.runOnClient(mc -> {
+                    ((CosmeticsScreen) mc.screen).openColorWindow("test_aura");
+                });
+                context.waitTicks(3);
+                click(context, "color:swatch:2"); // aura: #FF4040
+                context.waitTicks(3);
+                check(context, mc -> Integer.valueOf(0xFF4040).equals(OwnCosmetics.color("test_aura")),
+                    "the aura colour can be changed");
+                click(context, "color:close");
+                context.waitTicks(5);
+                context.takeScreenshot("htz_colored_preview");
                 context.setScreen(() -> null);
+                context.waitTicks(5);
+                context.takeScreenshot("htz_colored_world");
                 context.runOnClient(mc -> {
                     for (String id : newTypes) OwnCosmetics.unequip(id);
                     OwnCosmetics.equip(CosmeticLibrary.get().definition("top_hat"));

@@ -6,6 +6,7 @@ import com.heytozzz.htzcosmetics.core.manifest.Glow;
 import com.heytozzz.htzcosmetics.core.model.ModelParser;
 import com.heytozzz.htzcosmetics.client.render.BakedCosmetic;
 import com.heytozzz.htzcosmetics.client.render.CosmeticBaker;
+import com.heytozzz.htzcosmetics.client.render.TintCache;
 import com.heytozzz.htzcosmetics.core.source.CosmeticSource;
 import com.heytozzz.htzcosmetics.core.AssetCheck;
 import com.heytozzz.htzcosmetics.core.ValidationException;
@@ -154,7 +155,7 @@ public final class CosmeticLibrary {
                 if (p.model() == null) {
                     // Framed like a player: about 32 pixels tall around the body's middle.
                     next.put(def.id(), new BakedCosmetic(def, null, List.of(), List.of(), null, false,
-                        new float[]{0, 8, 0}, 34, aura));
+                        new float[]{0, 8, 0}, 34, aura, null));
                     continue;
                 }
                 String sha = def.texture().sha256();
@@ -168,7 +169,8 @@ public final class CosmeticLibrary {
                 }
                 CosmeticBaker.Baked model = CosmeticBaker.bake(p.model(), def.anchor(), bloomRadius);
                 next.put(def.id(), new BakedCosmetic(def, model.main(), model.bloom(), p.model().animations(), location,
-                    translucentByTexture.get(location), model.center(), model.size(), aura));
+                    translucentByTexture.get(location), model.center(), model.size(), aura,
+                    def.tint() != null ? p.image() : null));
             } catch (Exception e) {
                 HtzCosmetics.LOGGER.warn("Ignoring cosmetic '{}': {}", p.definition().id(), e.toString());
             }
@@ -180,6 +182,7 @@ public final class CosmeticLibrary {
         registeredTextures.clear();
         registeredTextures.addAll(uploadedBySha.values());
 
+        TintCache.clear(); // tinted copies belong to the old textures
         manifest = m;
         baked = Map.copyOf(next);
         lastAcceptedVersion = Math.max(lastAcceptedVersion, m.manifestVersion());
