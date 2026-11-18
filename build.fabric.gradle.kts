@@ -53,6 +53,12 @@ dependencies {
     fapi("fabric-api-base", "fabric-command-api-v2", "fabric-lifecycle-events-v1", "fabric-resource-loader-v0",
         "fabric-rendering-v1", "fabric-key-binding-api-v1")
 
+    // Optional compatibility testing with third-party mods copied into devmods/mods (never committed):
+    //   gradlew :1.21.8-fabric:runClientGameTest -PhtzCompat
+    if (providers.gradleProperty("htzCompat").isPresent) {
+        modLocalRuntime(fileTree(rootProject.file("devmods/mods")) { include("*.jar") })
+    }
+
     // Unit tests (JUnit). Only used when running tests, never shipped in the mod.
     testImplementation(platform("org.junit:junit-bom:${sc.properties["deps.junit"]}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -79,6 +85,11 @@ loom {
     runConfigs.matching { it.name == "clientGameTest" }.configureEach {
         @Suppress("DEPRECATION")
         property("htzcosmetics.devSite", "")
+        if (providers.gradleProperty("htzCompat").isPresent) {
+            // Resource packs to enable during the compatibility test (e.g. Fresh Animations).
+            @Suppress("DEPRECATION")
+            property("htzcosmetics.test.packs", rootProject.file("devmods/resourcepacks").absolutePath)
+        }
     }
 }
 

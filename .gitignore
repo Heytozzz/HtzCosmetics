@@ -34,3 +34,6 @@ keys/
 
 # Built, signed cosmetics site (regenerate with: gradlew htzBuildSite). Published separately.
 site/
+
+# Third-party mods/packs copied locally for compatibility testing only. Never commit.
+devmods/

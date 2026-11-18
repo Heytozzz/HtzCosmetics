@@ -4,6 +4,7 @@
   "package": "com.heytozzz.htzcosmetics.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "ModelPartAccessor",
     "OptionsMixin",
     "PlayerAccessor",
     "PlayerRenderStateMixin",

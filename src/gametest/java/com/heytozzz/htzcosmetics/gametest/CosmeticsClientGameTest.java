@@ -32,6 +32,7 @@ import java.util.UUID;
 public final class CosmeticsClientGameTest implements FabricClientGameTest {
     @Override
     public void runTest(ClientGameTestContext context) {
+        enableCompatPacks(context);
         try (TestSingleplayerContext world = context.worldBuilder().create()) {
             world.getClientWorld().waitForChunksRender();
             world.getServer().runCommand("time set noon");
@@ -75,6 +76,19 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             context.waitTicks(20);
             context.takeScreenshot("htz_front");
 
+            // Motion: walking, sneaking and looking down (animation mods move the head in these poses).
+            context.getInput().holdKey(o -> o.keyUp);
+            context.waitTicks(8);
+            context.takeScreenshot("htz_walk");
+            context.getInput().releaseKey(o -> o.keyUp);
+            context.getInput().holdKey(o -> o.keyShift);
+            context.waitTicks(10);
+            context.takeScreenshot("htz_sneak");
+            context.getInput().releaseKey(o -> o.keyShift);
+            context.runOnClient(mc -> mc.player.setXRot(40));
+            context.waitTicks(10);
+            context.takeScreenshot("htz_look_down");
+
             context.runOnClient(mc -> {
                 mc.player.setXRot(10);
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
@@ -99,5 +113,37 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             context.takeScreenshot("htz_options_screen");
             context.setScreen(() -> null);
         }
+    }
+
+    /**
+     * Compatibility run (gradlew :1.21.8-fabric:runClientGameTest -PhtzCompat): enables the resource packs found in
+     * devmods/resourcepacks (e.g. Fresh Animations) before the world is created.
+     */
+    private static void enableCompatPacks(ClientGameTestContext context) {
+        String dir = System.getProperty("htzcosmetics.test.packs");
+        if (dir == null || dir.isBlank()) return;
+        context.runOnClient(mc -> {
+            List<String> ids = new java.util.ArrayList<>();
+            try (var files = java.nio.file.Files.list(java.nio.file.Path.of(dir))) {
+                for (java.nio.file.Path zip : files.filter(f -> f.toString().endsWith(".zip")).sorted().toList()) {
+                    java.nio.file.Files.copy(zip, mc.getResourcePackDirectory().resolve(zip.getFileName()),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    ids.add("file/" + zip.getFileName());
+                }
+            } catch (java.io.IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+            var repo = mc.getResourcePackRepository();
+            repo.reload();
+            List<String> selected = new java.util.ArrayList<>(repo.getSelectedIds());
+            // Base pack first, then the extension (later = higher priority).
+            ids.sort(java.util.Comparator.comparing((String id) -> id.contains("+")));
+            selected.addAll(ids);
+            repo.setSelected(selected);
+            System.out.println("[htz-gametest] enabling packs " + ids);
+            mc.options.updateResourcePacks(repo);
+        });
+        context.waitTicks(5);
+        context.waitFor(mc -> mc.getOverlay() == null, 2400);
     }
 }
