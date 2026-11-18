@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Boxes shaped like the player's body parts, used to draw auras around the body. They are built from the vanilla
+ * Boxes shaped like the player's body parts, used to draw auras on and around the body. They are built from the vanilla
  * player model's box sizes (no textures needed) and hung on the real, posed body parts when drawn, so they follow
  * every movement, including animation mods.
  */
@@ -47,33 +47,33 @@ public final class AuraModel {
         boxes.put(Anchor.LEFT_LEG, new Box(-2, 0, -2, 4, 12, 4, 0.25F));
     }
 
-    /** The pre-built boxes of one body part for one aura. */
-    record Shells(Box box, ModelPart base, ModelPart fill, ModelPart[] bloom, ModelPart outline) {
+    /** The pre-built boxes of one body part: a plain body (thumbnails) and the soft light over the body. */
+    record Shells(Box box, ModelPart base, ModelPart fill) {
+        /** Half size of the part including the skin's outer layer, in model units, for the glow panels. */
+        float[] half() {
+            float g = box.outerLayer();
+            return new float[]{(box.w() / 2 + g) / 16, (box.h() / 2 + g) / 16, (box.d() / 2 + g) / 16};
+        }
     }
 
-    /** Everything an aura cosmetic draws, for both arm widths. Built once when the cosmetic is loaded. */
+    /** Everything an aura draws as geometry, for both arm widths. Built once. */
     public record Geometry(Map<Anchor, Shells> wide, Map<Anchor, Shells> slim) {
         Map<Anchor, Shells> forArms(boolean slimArms) {
             return slimArms ? slim : wide;
         }
     }
 
-    /**
-     * @param outline thickness of the outline in model pixels (0 = none)
-     * @param bloom   how far the outermost bloom box grows, in model pixels (0 = none)
-     */
-    public static Geometry build(double outline, double bloom) {
-        return new Geometry(WIDE.shells(outline, bloom), SLIM.shells(outline, bloom));
+    private static final Geometry GEOMETRY = new Geometry(WIDE.shells(), SLIM.shells());
+
+    public static Geometry geometry() {
+        return GEOMETRY;
     }
 
-    private Map<Anchor, Shells> shells(double outline, double bloom) {
+    private Map<Anchor, Shells> shells() {
         Map<Anchor, Shells> out = new EnumMap<>(Anchor.class);
         for (Map.Entry<Anchor, Box> e : boxes.entrySet()) {
             Box b = e.getValue();
-            ModelPart[] layers = new ModelPart[bloom > 0 ? CosmeticBaker.BLOOM_LAYERS : 0];
-            for (int k = 0; k < layers.length; k++) layers[k] = centred(b, (float) (bloom * (k + 1) / layers.length));
-            out.put(e.getKey(), new Shells(b, centred(b, -b.outerLayer() - GAP), centred(b, 0), layers,
-                outline > 0 ? centred(b, (float) outline) : null));
+            out.put(e.getKey(), new Shells(b, centred(b, -b.outerLayer() - GAP), centred(b, 0)));
         }
         return out;
     }

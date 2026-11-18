@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  *   "cycle":    4,      // seconds for a full colour loop (only with 2+ colours)
  *   "emissive": true,   // draw the cosmetic at full brightness (also in the dark); shader packs add their own bloom
  *   "bloom":    0.6,    // strength of the coloured halo around it, 0 = none
- *   "radius":   1.0,    // size of the halo in model pixels
+ *   "radius":   1.0,    // size of the halo in model pixels (0.1-8)
  *   "pulse":    0       // seconds per breathing pulse, 0 = steady
  * }
  * }</pre>
@@ -27,7 +27,7 @@ public record Glow(int[] colors, double cycle, boolean emissive, double bloom, d
     public static final int MAX_COLORS = 8;
     public static final double MIN_SECONDS = 0.25;
     public static final double MAX_SECONDS = 60;
-    public static final double MAX_RADIUS = 3;
+    public static final double MAX_RADIUS = 8;
     private static final Pattern COLOR = Pattern.compile("#[0-9A-Fa-f]{6}");
 
     /** Parses and validates the "glow" object; any problem rejects the cosmetic. */

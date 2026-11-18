@@ -147,6 +147,10 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
                 context.waitTicks(20);
                 context.takeScreenshot("htz_new_types_night");
                 world.getServer().runCommand("time set noon");
+                context.setScreen(() -> new CosmeticsScreen(null));
+                context.waitTicks(10);
+                context.takeScreenshot("htz_new_types_preview");
+                context.setScreen(() -> null);
                 context.runOnClient(mc -> {
                     for (String id : newTypes) OwnCosmetics.unequip(id);
                     OwnCosmetics.equip(CosmeticLibrary.get().definition("top_hat"));

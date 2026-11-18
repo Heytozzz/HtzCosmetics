@@ -137,7 +137,7 @@ public final class ManifestParser {
             Aura auraSpec = null;
             if (aura) {
                 if (glow == null) return null; // an aura's colours come from its glow
-                auraSpec = Json.has(obj, "aura") ? Aura.parse(Json.object(obj, "aura")) : new Aura(0.2, 0.5);
+                auraSpec = Json.has(obj, "aura") ? Aura.parse(Json.object(obj, "aura")) : Aura.DEFAULT;
             } else if (Json.has(obj, "aura")) {
                 return null;
             }

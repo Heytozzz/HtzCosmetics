@@ -83,16 +83,18 @@ Ejemplo de `cosmetic.json`:
   - `cycle`: segundos que tarda en recorrer todos los colores (0,25 a 60; por defecto 4).
   - `emissive`: `true` hace que el cosmético se vea a plena luz también de noche (por defecto `true`). Con shaders, el shader le añade su propio bloom.
   - `bloom`: intensidad del halo de color alrededor (0 a 1; 0 = sin halo; por defecto 0,6).
-  - `radius`: tamaño del halo en píxeles del modelo (0,1 a 3; por defecto 1).
+  - `radius`: tamaño del halo en píxeles del modelo (0,1 a 8; por defecto 1).
   - `pulse`: segundos de cada "respiración" del brillo (0 = fijo, o de 0,25 a 60).
-- `aura` (solo para la categoría `AURA`, que además **necesita** `glow` para sus colores):
+- `aura` (solo para la categoría `AURA`, que además **necesita** `glow` para sus colores). El aura es un brillo suave alrededor de la silueta del jugador, parecido al efecto *glowing* de Minecraft, pero que nunca se ve a través de las paredes:
 
   ```json
-  "aura": { "fill": 0.2, "outline": 0.5 }
+  "aura": { "outline": 1, "outlineStrength": 0.9, "fill": 0 }
   ```
 
-  - `fill`: luz suave de color sobre el cuerpo (0 a 0,6; por defecto 0,2).
-  - `outline`: grosor del contorno en píxeles (0 a 1,5; 0 = sin contorno; por defecto 0,5).
+  - `outline`: ancho del borde brillante pegado al cuerpo, en píxeles (0 a 3; 0 = sin borde; por defecto 1).
+  - `outlineStrength`: opacidad de ese borde (0 a 1; por defecto 0,9).
+  - `fill`: luz de color sobre el propio cuerpo (0 a 0,6; por defecto 0, apagada).
+  - El halo ancho y difuso usa `bloom` (intensidad) y `radius` (amplitud, hasta 8 píxeles) del bloque `glow`.
 
   Un aura no necesita `model.bbmodel` ni `texture.png`: basta con `cosmetic.json`.
 - `name`: el nombre en inglés (`en_us`) es obligatorio. Cada nombre puede tener hasta 48 caracteres.

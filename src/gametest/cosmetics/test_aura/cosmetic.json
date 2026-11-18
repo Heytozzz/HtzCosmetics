@@ -11,12 +11,13 @@
       "#B040FF"
     ],
     "cycle": 3,
-    "bloom": 0.7,
-    "radius": 1.5,
+    "bloom": 0.6,
+    "radius": 4,
     "pulse": 2
   },
   "aura": {
-    "fill": 0.25,
-    "outline": 0.6
+    "outline": 1.2,
+    "outlineStrength": 0.9,
+    "fill": 0
   }
 }

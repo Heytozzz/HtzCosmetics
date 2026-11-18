@@ -150,7 +150,7 @@ public final class CosmeticLibrary {
                 CosmeticDefinition def = p.definition();
                 Glow glow = def.glow();
                 double bloomRadius = glow != null && glow.bloom() > 0 ? glow.radius() : 0;
-                AuraModel.Geometry aura = def.aura() != null ? AuraModel.build(def.aura().outline(), bloomRadius) : null;
+                AuraModel.Geometry aura = def.aura() != null ? AuraModel.geometry() : null;
                 if (p.model() == null) {
                     // Framed like a player: about 32 pixels tall around the body's middle.
                     next.put(def.id(), new BakedCosmetic(def, null, List.of(), List.of(), null, false,

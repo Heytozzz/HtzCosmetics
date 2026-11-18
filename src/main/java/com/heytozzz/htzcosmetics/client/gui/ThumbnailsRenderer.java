@@ -48,10 +48,10 @@ public final class ThumbnailsRenderer extends HtzPipRenderer<ThumbnailsRenderSta
             float pixelsPerModelPixel = thumb.size() * FILL / c.size();
             pose.pushPose();
             pose.translate(thumb.cx() - midX, thumb.cy() - midY, 0.0F);
-            // Model space has +Y down like this texture. The renderer flips Z; flip it back so the model is not mirrored.
-            pose.scale(pixelsPerModelPixel * 16.0F, pixelsPerModelPixel * 16.0F, -pixelsPerModelPixel * 16.0F);
-            pose.mulPose(Axis.XP.rotationDegrees(-TILT_DEGREES));
-            pose.mulPose(Axis.YP.rotationDegrees(thumb.yawDegrees()));
+            // Model space has +Y down like this texture. No negative scale: that would mirror the model.
+            pose.scale(pixelsPerModelPixel * 16.0F, pixelsPerModelPixel * 16.0F, pixelsPerModelPixel * 16.0F);
+            pose.mulPose(Axis.XP.rotationDegrees(TILT_DEGREES));
+            pose.mulPose(Axis.YP.rotationDegrees(180.0F + thumb.yawDegrees()));
             pose.translate(-c.center()[0] / 16.0F, -c.center()[1] / 16.0F, -c.center()[2] / 16.0F);
             CosmeticRenderUtil.drawIdle(c, pose, drawer::draw, state.seconds(), LightTexture.FULL_BRIGHT,
                 OverlayTexture.NO_OVERLAY);

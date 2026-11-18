@@ -72,7 +72,7 @@ public final class CosmeticLayer extends RenderLayer<PlayerRenderState, PlayerMo
             BakedCosmetic cosmetic = CosmeticLibrary.get().baked(id);
             if (cosmetic == null) continue; // not loaded yet, or rejected by validation
             if (!drawn.add(cosmetic.definition().category())) continue; // one per category
-            CosmeticRenderUtil.draw(cosmetic, pose, poser, sink, seconds, trigger, light, overlay, slim, false);
+            CosmeticRenderUtil.draw(cosmetic, pose, poser, sink, seconds, trigger, light, overlay, slim, false, false);
         }
     }
 

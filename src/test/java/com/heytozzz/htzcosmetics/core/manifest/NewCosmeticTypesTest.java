@@ -50,6 +50,11 @@ class NewCosmeticTypesTest {
         assertNull(aura.texture());
         assertEquals(0.6, aura.aura().outline());
         assertNotNull(aura.glow());
+        assertEquals(0.9, aura.aura().outlineStrength()); // default
+        // A missing "aura" block gets the defaults: glowing edge on, no light over the body.
+        CosmeticDefinition plain = parse(aura("plain", GLOW)).byId().get("plain");
+        assertEquals(Aura.DEFAULT, plain.aura());
+        assertEquals(8.0, Glow.MAX_RADIUS);
     }
 
     @Test
@@ -76,9 +81,10 @@ class NewCosmeticTypesTest {
             cosmetic("h", "HEAD", "HEAD", "RARE", 2, ",\"aura\":{}"),                                  // aura on a hat
             aura("i", ""),                                                                            // aura without glow
             aura("j", GLOW + ",\"aura\":{\"outline\":99}"),
+            aura("l", GLOW + ",\"aura\":{\"outlineStrength\":2}"),
             aura("k", GLOW + ",\"model\":{\"sha256\":\"" + "a".repeat(64) + "\",\"size\":10}"));       // model, no texture
         assertEquals(0, m.cosmetics().size());
-        assertEquals(11, m.skippedEntries());
+        assertEquals(12, m.skippedEntries());
     }
 
     @Test

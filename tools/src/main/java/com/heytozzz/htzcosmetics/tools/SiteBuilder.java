@@ -205,10 +205,11 @@ public final class SiteBuilder {
         entry.put("minFormat", newFormat ? 2 : 1); // 2 = older mod builds skip it instead of misreading it
         if (glow != null) entry.put("glow", glowJson(glow));
         if (category.isAura()) {
-            Aura a = aura != null ? aura : new Aura(0.2, 0.5);
+            Aura a = aura != null ? aura : Aura.DEFAULT;
             Map<String, Object> auraJson = new LinkedHashMap<>();
-            auraJson.put("fill", a.fill());
             auraJson.put("outline", a.outline());
+            auraJson.put("outlineStrength", a.outlineStrength());
+            auraJson.put("fill", a.fill());
             entry.put("aura", auraJson);
         }
         // Keep a stable key order: id, name, category, rarity, anchor, minFormat, model, texture, glow, aura.

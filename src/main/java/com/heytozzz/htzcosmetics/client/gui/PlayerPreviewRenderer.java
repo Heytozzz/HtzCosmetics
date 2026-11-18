@@ -48,9 +48,11 @@ public final class PlayerPreviewRenderer extends HtzPipRenderer<PlayerPreviewRen
 
         pose.pushPose();
         pose.translate(state.panX(), state.panY(), 0.0F);
-        pose.scale(k * 16.0F, k * 16.0F, -k * 16.0F);
-        pose.mulPose(Axis.XP.rotationDegrees(state.pitchDegrees())); // tilt towards / away from the viewer
-        pose.mulPose(Axis.YP.rotationDegrees(180.0F + state.yawDegrees()));
+        // A plain (non-mirrored) scale: a negative axis here would show the player mirrored, left and right swapped,
+        // and turn the lighting around.
+        pose.scale(k * 16.0F, k * 16.0F, k * 16.0F);
+        pose.mulPose(Axis.XP.rotationDegrees(-state.pitchDegrees())); // tilt towards / away from the viewer
+        pose.mulPose(Axis.YP.rotationDegrees(state.yawDegrees()));
         pose.translate(0.0F, -(TOP + BOTTOM) / 2.0F / 16.0F, 0.0F);
 
         var model = state.model();
