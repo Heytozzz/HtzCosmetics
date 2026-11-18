@@ -35,19 +35,24 @@ public final class WardrobeButton {
     public static SpriteIconButton forScreen(Screen screen, List<? extends AbstractWidget> buttons) {
         int x;
         int y;
+        int step;
         if (screen instanceof TitleScreen) {
             AbstractWidget language = find(buttons, "options.language");
             if (language == null) return null;
-            x = language.getX() - SIZE - GAP; // left of the language button
+            x = language.getX() - SIZE - GAP; // left of the language button...
             y = language.getY();
+            step = -(SIZE + GAP);             // ...or further left if that spot is taken (e.g. the 26.2 friends button)
         } else if (screen instanceof PauseScreen) {
             AbstractWidget back = find(buttons, "menu.returnToGame");
             if (back == null) return null;
-            x = back.getX() + back.getWidth() + GAP; // right of "Back to Game"
+            x = back.getX() + back.getWidth() + GAP; // right of "Back to Game"...
             y = back.getY();
+            step = SIZE + GAP;                       // ...or further right if taken
         } else {
             return null;
         }
+        for (int tries = 0; tries < 8 && overlapsAny(buttons, x, y); tries++) x += step;
+        if (overlapsAny(buttons, x, y) || x < 0 || x + SIZE > screen.width) return null; // no free spot: skip
         Component label = Component.translatable(MESSAGE_KEY);
         SpriteIconButton button = SpriteIconButton.builder(label,
                 b -> Minecraft.getInstance().setScreen(new CosmeticsScreen(screen)), true)
@@ -57,6 +62,14 @@ public final class WardrobeButton {
         button.setPosition(x, y);
         button.setTooltip(Tooltip.create(label));
         return button;
+    }
+
+    private static boolean overlapsAny(List<? extends AbstractWidget> buttons, int x, int y) {
+        for (AbstractWidget w : buttons) {
+            if (w.visible && x < w.getX() + w.getWidth() && x + SIZE > w.getX()
+                && y < w.getY() + w.getHeight() && y + SIZE > w.getY()) return true;
+        }
+        return false;
     }
 
     private static AbstractWidget find(List<? extends AbstractWidget> buttons, String key) {

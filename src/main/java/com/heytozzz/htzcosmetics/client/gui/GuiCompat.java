@@ -23,7 +23,9 @@ public final class GuiCompat {
     }
 
     public static void outline(GuiGraphics g, int x, int y, int w, int h, int color) {
-        //? if >=1.21.9 && <1.21.11 {
+        //? if >=26.1 {
+        /*g.outline(x, y, w, h, color);
+        *///?} else if >=1.21.9 && <1.21.11 {
         /*g.submitOutline(x, y, w, h, color);
         *///?} else {
         g.renderOutline(x, y, w, h, color);
@@ -52,10 +54,9 @@ public final class GuiCompat {
         //? if >=1.21.9 {
         /*KeyMapping.Category category = KeyMapping.Category.register(
             ResourceLocation.fromNamespaceAndPath(HtzCosmetics.MOD_ID, "main"));
-        return new KeyMapping(name, com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM, defaultKey, category);
+        return new KeyMapping(name, defaultKey, category);
         *///?} else {
-        return new KeyMapping(name, com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM, defaultKey,
-            "key.categories." + HtzCosmetics.MOD_ID);
+        return new KeyMapping(name, defaultKey, "key.categories." + HtzCosmetics.MOD_ID);
         //?}
     }
 }

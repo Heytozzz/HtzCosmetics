@@ -38,9 +38,9 @@ stonecutter {
         match("1.21.8", "fabric")
         match("1.21.10", "fabric")
         match("1.21.11", "fabric")
-        // match("26.1", "fabric")   // also runs on 26.1.1 and 26.1.2 (being ported)
-        // match("26.2", "fabric")   // (being ported)
-        // match("26.3", "fabric")   // (being ported)
+        match("26.1", "fabric")   // also runs on 26.1.1 and 26.1.2
+        match("26.2", "fabric")
+        match("26.3", "fabric")
 
         // The version whose code is "plain" (uncommented) in src/ when committed to git.
         vcsVersion = "1.21.8-fabric"

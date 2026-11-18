@@ -625,8 +625,9 @@ public final class CosmeticsScreen extends Screen {
 
     /** @return true if consumed (also true for any click while the Equipped window is open) */
     private boolean onMouseClicked(double mx, double my, int button) {
-        if (button == 0 && handleClick(mx, my)) return true;
-        if (button == 1 && handleRightClick(mx, my)) return true;
+        // Named constants: mouse button numbers differ between versions (26.3 uses SDL numbering).
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && handleClick(mx, my)) return true;
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT && handleRightClick(mx, my)) return true;
         return equippedWindow;
     }
 

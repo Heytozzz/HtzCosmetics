@@ -31,7 +31,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.network.chat.Component;
 
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * Fabric client entrypoint. Only Fabric-specific glue lives in this package;
@@ -55,11 +55,19 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
         });
 
         // 3D cosmetic thumbnails in the wardrobe menu.
+        //? if >=26.2 {
+        /*SpecialGuiElementRegistry.register(ctx -> new ThumbnailsRenderer());
+        SpecialGuiElementRegistry.register(ctx -> new PlayerPreviewRenderer());
+        *///?} else if >=26.1 {
+        /*SpecialGuiElementRegistry.register(ctx -> new ThumbnailsRenderer(ctx.bufferSource()));
+        SpecialGuiElementRegistry.register(ctx -> new PlayerPreviewRenderer(ctx.bufferSource()));
+        *///?} else {
         SpecialGuiElementRegistry.register(ctx -> new ThumbnailsRenderer(ctx.vertexConsumers()));
         SpecialGuiElementRegistry.register(ctx -> new PlayerPreviewRenderer(ctx.vertexConsumers()));
+        //?}
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientBootstrap.init());
-        KeyMapping openKey = KeyBindingHelper.registerKeyBinding(GuiCompat.keyMapping("key.htzcosmetics.open", GLFW.GLFW_KEY_J));
+        KeyMapping openKey = KeyBindingHelper.registerKeyBinding(GuiCompat.keyMapping("key.htzcosmetics.open", InputConstants.KEY_J));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             RemoteSync.tick(client);
             while (openKey.consumeClick()) {

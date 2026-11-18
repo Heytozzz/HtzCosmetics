@@ -49,7 +49,13 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
         check(context, mc -> mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen,
             "back arrow returns to the title screen");
         try (TestSingleplayerContext world = context.worldBuilder().create()) {
+            //? if >=26.3 {
+            /*world.getConnection().waitForChunksRender();
+            *///?} else if >=26.1 {
+            /*world.getClientLevel().waitForChunksRender();
+            *///?} else {
             world.getClientWorld().waitForChunksRender();
+            //?}
             world.getServer().runCommand("time set noon");
             world.getServer().runCommand("weather clear");
 
@@ -83,7 +89,7 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             if ((before & 0x7F) != (after & 0x7F)) throw new AssertionError("visible skin parts changed");
 
             context.runOnClient(mc -> {
-                mc.options.hideGui = true;
+                hideGui(mc, true);
                 mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
                 mc.player.setYRot(0);
                 mc.player.setXRot(0);
@@ -127,7 +133,7 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
 
             context.runOnClient(mc -> {
                 mc.options.setCameraType(CameraType.FIRST_PERSON);
-                mc.options.hideGui = false;
+                hideGui(mc, false);
             });
             context.setScreen(() -> new InventoryScreen(net.minecraft.client.Minecraft.getInstance().player));
             context.waitTicks(5);
@@ -159,22 +165,19 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             int[] center = context.computeOnClient(mc -> ((CosmeticsScreen) mc.screen).previewCenter());
             double guiScale = context.computeOnClient(mc -> mc.getWindow().getGuiScale());
             context.getInput().setCursorPos(center[0] * guiScale, center[1] * guiScale);
-            context.getInput().holdMouse(0);
+            context.getInput().holdMouse(com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT);
             context.waitTick();
             context.getInput().moveCursor(60 * guiScale, 0);
             context.waitTick();
-            context.getInput().releaseMouse(0);
+            context.getInput().releaseMouse(com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT);
             context.waitTicks(2);
             check(context, mc -> ((CosmeticsScreen) mc.screen).previewYaw() != 0, "dragging rotates the preview");
             context.takeScreenshot("htz_preview_dragged");
             zoomAndMove(context, "world");
 
             // Big screen: 1920x1080 at GUI scale 3 (rarity filter shows as chips).
-            context.getInput().resizeWindow(1920, 1080);
-            context.runOnClient(mc -> {
-                mc.options.guiScale().set(3);
-                mc.resizeDisplay();
-            });
+            context.runOnClient(mc -> mc.options.guiScale().set(3));
+            context.getInput().resizeWindow(1920, 1080); // the resize applies the new GUI scale
             context.waitTicks(5);
             context.takeScreenshot("htz_equip_screen_1080p");
 
@@ -189,6 +192,13 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             context.takeScreenshot("htz_options_screen");
             context.setScreen(() -> null);
         }
+    }
+
+    /** Hides the HUD for cleaner screenshots (not available in every version; then it is skipped). */
+    private static void hideGui(net.minecraft.client.Minecraft mc, boolean hide) {
+        //? if <26.2 {
+        mc.options.hideGui = hide;
+        //?}
     }
 
     /** Finds our wardrobe button on the current screen, clicks it, and checks the wardrobe opened. */
@@ -217,11 +227,11 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
         context.getInput().scroll(4);
         context.waitTicks(2);
         check(context, mc -> ((CosmeticsScreen) mc.screen).previewZoom() > 1.5F, "wheel zooms the preview (" + where + ")");
-        context.getInput().holdMouse(1);
+        context.getInput().holdMouse(com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT);
         context.waitTick();
         context.getInput().moveCursor(30 * scale, 40 * scale); // right and down
         context.waitTick();
-        context.getInput().releaseMouse(1);
+        context.getInput().releaseMouse(com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT);
         context.waitTicks(2);
         check(context, mc -> ((CosmeticsScreen) mc.screen).previewPan()[1] > 10, "right drag moves the preview (" + where + ")");
         context.takeScreenshot("htz_preview_zoom_" + where);
@@ -238,7 +248,7 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
     private static void clickAt(ClientGameTestContext context, int guiX, int guiY) {
         double scale = context.computeOnClient(mc -> mc.getWindow().getGuiScale());
         context.getInput().setCursorPos(guiX * scale + scale / 2, guiY * scale + scale / 2);
-        context.getInput().pressMouse(0);
+        context.getInput().pressMouse(com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT);
         context.waitTicks(2);
     }
 
