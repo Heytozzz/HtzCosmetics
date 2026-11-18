@@ -59,6 +59,7 @@ public final class CosmeticLayer extends RenderLayer<PlayerRenderState, PlayerMo
 
             pose.pushPose();
             AnchorTransform.apply(pose, model.root(), anchor);
+            CosmeticAnimator.pose(cosmetic, state);
             VertexConsumer vertices = buffers.getBuffer(cosmetic.translucent()
                 ? RenderType.entityTranslucent(cosmetic.texture())
                 : RenderType.entityCutoutNoCull(cosmetic.texture()));

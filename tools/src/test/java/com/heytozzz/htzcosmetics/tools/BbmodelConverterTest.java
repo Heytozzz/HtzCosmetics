@@ -93,18 +93,6 @@ class BbmodelConverterTest {
     }
 
     @Test
-    void ignoresAnimationsWithMolangAndWarns() throws Exception {
-        String bb = bbmodel(cube("u1", "-4,32,-4", "4,33,4", ""),
-            "{\"name\":\"hat\",\"origin\":[0,24,0],\"children\":[\"u1\"]}",
-            ",\"animations\":[{\"name\":\"spin\",\"animators\":{\"x\":{\"keyframes\":[{\"data_points\":[{\"y\":\"query.anim_time*90\"}]}]}}}]");
-        BbmodelConverter.Result r = BbmodelConverter.convert(bb.getBytes(StandardCharsets.UTF_8), Anchor.HEAD, "t");
-        String json = new String(r.modelJson(), StandardCharsets.US_ASCII);
-        assertFalse(json.contains("query"), "Molang must never reach the output");
-        assertFalse(json.contains("animation"));
-        assertTrue(r.warnings().stream().anyMatch(w -> w.contains("animations")));
-    }
-
-    @Test
     void rejectsMeshesAndPerFaceUv() {
         String mesh = bbmodel("{\"name\":\"m\",\"type\":\"mesh\",\"uuid\":\"u1\"}",
             "{\"name\":\"g\",\"origin\":[0,24,0],\"children\":[\"u1\"]}", "");

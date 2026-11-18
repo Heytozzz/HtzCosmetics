@@ -31,6 +31,16 @@ public final class Limits {
     public static final double MAX_INFLATE = 4.0;
     public static final double MAX_ROTATION_DEGREES = 360.0;
 
+    // --- Animations (declarative keyframes only; seconds, degrees, model pixels) ---
+    public static final int MAX_ANIMATIONS = 8;
+    public static final int MAX_KEYFRAMES_PER_CHANNEL = 64;
+    public static final int MAX_TOTAL_KEYFRAMES = 4096;
+    public static final double MIN_ANIMATION_LENGTH = 0.05;
+    public static final double MAX_ANIMATION_LENGTH = 60.0;
+    public static final double MAX_ANIMATION_ROTATION = 720.0;
+    public static final double MAX_ANIMATION_OFFSET = 32.0;
+    public static final double MAX_ANIMATION_SCALE = 4.0;
+
     private Limits() {
     }
 }

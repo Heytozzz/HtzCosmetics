@@ -36,7 +36,7 @@ class ModelParserTest {
 
     @Test
     void ignoresUnknownKeysLikeFutureAnimations() throws Exception {
-        String json = "{\"format\":1,\"animations\":{\"idle\":{}},\"texture\":{\"width\":64,\"height\":64},"
+        String json = "{\"format\":1,\"particles\":{\"idle\":{}},\"texture\":{\"width\":64,\"height\":64},"
             + "\"bones\":[{\"name\":\"a\",\"cubes\":[" + CUBE + "]}]}";
         assertEquals(1, parse(json).cubeCount());
     }

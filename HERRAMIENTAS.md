@@ -35,7 +35,13 @@ Ejemplo de `cosmetic.json`:
 - Modela el cosmético encima de un jugador normal, con los pies en Y=0 y la cabeza entre Y=24 y Y=32. Si añades un jugador de referencia, ocúltalo (icono del ojo); las piezas ocultas no se exportan.
 - Solo se admiten **cubos**: nada de *meshes*. Puedes rotar grupos y cubos.
 - Límites: 32 grupos, 256 cubos, texturas de hasta 256×256 y cubos a menos de 32 píxeles del pivote de su grupo.
-- Las animaciones todavía no se exportan.
+- **Animaciones:** crea en Blockbench animaciones con estos nombres (vale un prefijo como `animation.modelo.idle`):
+  - `idle`: se reproduce siempre;
+  - `walk`: se reproduce al andar;
+  - `sneak` (o `crouch`): se reproduce agachado.
+  Si falta `walk` o `sneak`, se usa `idle`. Se pueden animar rotación, posición y escala de los **grupos**, con interpolación lineal, escalonada o suave (catmullrom). Las animaciones siempre se repiten en bucle.
+- **Nada de fórmulas (Molang):** en los fotogramas solo valen números. Si escribes algo como `math.sin(query.anim_time*90)`, el comando se para y te dice en qué animación está. Convierte esos movimientos en fotogramas clave en Blockbench.
+- Límites de animación: 8 por cosmético, 64 fotogramas por canal, 60 segundos de duración como máximo.
 
 ## 2. Publicar
 

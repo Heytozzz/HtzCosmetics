@@ -148,8 +148,9 @@ public final class CosmeticLibrary {
                     uploadedBySha.put(sha, location);
                     translucentByTexture.put(location, hasPartialAlpha(p.image()));
                 }
-                next.put(p.definition().id(), new BakedCosmetic(p.definition(), CosmeticBaker.bake(p.model()),
-                    location, translucentByTexture.get(location)));
+                CosmeticBaker.Baked model = CosmeticBaker.bake(p.model());
+                next.put(p.definition().id(), new BakedCosmetic(p.definition(), model.root(), model.bones(),
+                    p.model().animations(), location, translucentByTexture.get(location)));
             } catch (Exception e) {
                 HtzCosmetics.LOGGER.warn("Ignoring cosmetic '{}': {}", p.definition().id(), e.toString());
             }

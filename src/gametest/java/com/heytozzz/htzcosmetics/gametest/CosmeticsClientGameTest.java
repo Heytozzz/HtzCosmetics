@@ -89,6 +89,20 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             context.waitTicks(10);
             context.takeScreenshot("htz_look_down");
 
+            // Animated cosmetic (if published): two shots 1 s apart must differ (spin + float).
+            boolean hasHalo = context.computeOnClient(mc -> CosmeticLibrary.get().definition("angel_halo") != null);
+            if (hasHalo) {
+                context.runOnClient(mc -> {
+                    OwnCosmetics.equip(CosmeticLibrary.get().definition("angel_halo"));
+                    mc.player.setXRot(15);
+                });
+                context.waitTicks(5);
+                context.takeScreenshot("htz_halo_a");
+                context.waitTicks(15);
+                context.takeScreenshot("htz_halo_b");
+                context.runOnClient(mc -> OwnCosmetics.equip(CosmeticLibrary.get().definition("top_hat")));
+            }
+
             context.runOnClient(mc -> {
                 mc.player.setXRot(10);
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);

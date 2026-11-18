@@ -21,8 +21,8 @@ import java.util.Set;
  * using a "Modded Entity" / box-UV project. The converter makes everything relative to the anchor body part,
  * so a hat placed on the player's head in Blockbench appears on the head in game.
  *
- * <p>Only geometry is converted: groups (bones), box-UV cubes, pivots, rotations, inflate and mirror.
- * Animations are NOT converted (they can contain Molang expressions, which we never accept).
+ * <p>Converted: groups (bones), box-UV cubes, pivots, rotations, inflate, mirror, and animations named
+ * idle / walk / sneak as plain keyframes (see {@link BbAnimationConverter}; Molang expressions are rejected).
  * Meshes and per-face UV are rejected with a clear message.
  *
  * <p>Coordinate conversion (same as Blockbench's own Java entity export): Blockbench uses Y up and the
@@ -48,6 +48,8 @@ public final class BbmodelConverter {
     private final double[] anchorPivot;
     private final Map<String, Map<String, Object>> elementsByUuid = new HashMap<>();
     private final Map<String, Map<String, Object>> groupsByUuid = new HashMap<>();
+    /** Blockbench group uuid -> our bone name (animations target groups by uuid). */
+    private final Map<String, String> boneByGroupUuid = new HashMap<>();
     private final List<Map<String, Object>> bones = new ArrayList<>();
     private final Set<String> usedNames = new HashSet<>();
     private final List<String> warnings = new ArrayList<>();
@@ -85,9 +87,6 @@ public final class BbmodelConverter {
             texHeight = 64;
         }
 
-        if (Json.has(root, "animations") && !Json.asArray(root.get("animations"), "animations").isEmpty()) {
-            warnings.add("animations are ignored (only static models are supported for now)");
-        }
 
         if (Json.has(root, "elements")) {
             for (Object e : Json.asArray(root.get("elements"), "elements")) {
@@ -127,6 +126,8 @@ public final class BbmodelConverter {
         texture.put("height", texHeight);
         model.put("texture", texture);
         model.put("bones", bones);
+        List<Object> animations = BbAnimationConverter.convert(root, boneByGroupUuid, label, warnings);
+        if (!animations.isEmpty()) model.put("animations", animations);
         return new Result(JsonWriter.toBytes(model), embeddedTexture(root), warnings);
     }
 
@@ -156,6 +157,9 @@ public final class BbmodelConverter {
         double[] rotation = vec(group, "rotation");
         double[] relative = sub(origin, parentOrigin == null ? anchorPivot : parentOrigin);
         String name = uniqueName(Json.has(group, "name") ? Json.asString(group.get("name"), "name", 256) : "bone");
+        String groupUuid = Json.has(node, "uuid") ? Json.asString(node.get("uuid"), "uuid", 64)
+            : (Json.has(group, "uuid") ? Json.asString(group.get("uuid"), "uuid", 64) : null);
+        if (groupUuid != null) boneByGroupUuid.put(groupUuid, name);
         Map<String, Object> bone = newBone(name, parentName, toJava(relative), toJavaRotation(rotation));
 
         List<Object> children = Json.has(node, "children") ? Json.asArray(node.get("children"), "children") : List.of();

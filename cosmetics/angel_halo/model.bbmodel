@@ -1,0 +1,29 @@
+{
+  "meta": { "format_version": "4.10", "model_format": "modded_entity", "box_uv": true },
+  "name": "angel_halo",
+  "resolution": { "width": 32, "height": 16 },
+  "elements": [
+    { "name": "front", "type": "cube", "from": [-4, 35, -4], "to": [4, 36, -3], "origin": [0, 35.5, 0], "uv_offset": [0, 0], "uuid": "a0000000-0000-0000-0000-000000000001" },
+    { "name": "back", "type": "cube", "from": [-4, 35, 3], "to": [4, 36, 4], "origin": [0, 35.5, 0], "uv_offset": [0, 2], "uuid": "a0000000-0000-0000-0000-000000000002" },
+    { "name": "left", "type": "cube", "from": [-4, 35, -3], "to": [-3, 36, 3], "origin": [0, 35.5, 0], "uv_offset": [0, 4], "uuid": "a0000000-0000-0000-0000-000000000003" },
+    { "name": "right", "type": "cube", "from": [3, 35, -3], "to": [4, 36, 3], "origin": [0, 35.5, 0], "uv_offset": [14, 4], "uuid": "a0000000-0000-0000-0000-000000000004" }
+  ],
+  "outliner": [
+    { "name": "halo", "origin": [0, 35.5, 0], "rotation": [0, 0, 0], "uuid": "b0000000-0000-0000-0000-000000000001",
+      "children": [ "a0000000-0000-0000-0000-000000000001", "a0000000-0000-0000-0000-000000000002",
+                    "a0000000-0000-0000-0000-000000000003", "a0000000-0000-0000-0000-000000000004" ] }
+  ],
+  "textures": [],
+  "animations": [
+    { "uuid": "c0000000-0000-0000-0000-000000000001", "name": "animation.angel_halo.idle", "loop": "loop", "length": 4,
+      "animators": {
+        "b0000000-0000-0000-0000-000000000001": { "name": "halo", "type": "bone", "keyframes": [
+          { "channel": "rotation", "time": 0, "interpolation": "linear", "data_points": [ { "x": "0", "y": "0", "z": "0" } ] },
+          { "channel": "rotation", "time": 4, "interpolation": "linear", "data_points": [ { "x": "0", "y": "360", "z": "0" } ] },
+          { "channel": "position", "time": 0, "interpolation": "catmullrom", "data_points": [ { "x": "0", "y": "0", "z": "0" } ] },
+          { "channel": "position", "time": 2, "interpolation": "catmullrom", "data_points": [ { "x": "0", "y": "1", "z": "0" } ] },
+          { "channel": "position", "time": 4, "interpolation": "catmullrom", "data_points": [ { "x": "0", "y": "0", "z": "0" } ] }
+        ] }
+      } }
+  ]
+}

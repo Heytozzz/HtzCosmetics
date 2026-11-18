@@ -23,7 +23,11 @@ public final class CosmeticBaker {
     private CosmeticBaker() {
     }
 
-    public static ModelPart bake(CosmeticModel model) {
+    /** Result of baking: the root part plus each bone's part (same order as the model's bones). */
+    public record Baked(ModelPart root, ModelPart[] bones) {
+    }
+
+    public static Baked bake(CosmeticModel model) {
         List<Bone> bones = model.bones();
         int n = bones.size();
         ModelPart[] parts = new ModelPart[n];
@@ -41,13 +45,14 @@ public final class CosmeticBaker {
             part.setPos((float) bone.pivot()[0], (float) bone.pivot()[1], (float) bone.pivot()[2]);
             part.setRotation((float) Math.toRadians(bone.rotation()[0]), (float) Math.toRadians(bone.rotation()[1]),
                 (float) Math.toRadians(bone.rotation()[2]));
+            part.setInitialPose(part.storePose()); // rest pose, restored before every animated frame
             parts[i] = part;
         }
         Map<String, ModelPart> roots = new HashMap<>();
         for (int i = 0; i < n; i++) {
             if (bones.get(i).parentIndex() < 0) roots.put(bones.get(i).name(), parts[i]);
         }
-        return new ModelPart(List.of(), roots);
+        return new Baked(new ModelPart(List.of(), roots), parts);
     }
 
     private static ModelPart.Cube toVanilla(Cube c, int texWidth, int texHeight) {

@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  *   ]
  * }
  * }</pre>
- * Unknown keys (e.g. a future "animations" block) are ignored.
+ * An optional "animations" block holds declarative keyframes (see {@link AnimationParser}). Unknown keys are ignored.
  */
 public final class ModelParser {
     public static final int SUPPORTED_FORMAT = 1;
@@ -84,7 +84,8 @@ public final class ModelParser {
         }
         if (totalCubes == 0) throw new ValidationException("model has no cubes");
 
-        return new CosmeticModel(format, texWidth, texHeight, Collections.unmodifiableList(bones), totalCubes);
+        List<Bone> boneList2 = Collections.unmodifiableList(bones);
+        return new CosmeticModel(format, texWidth, texHeight, boneList2, totalCubes, AnimationParser.parse(root, boneList2));
     }
 
     private static Cube parseCube(Map<String, Object> c, int texWidth, int texHeight) throws ValidationException {
