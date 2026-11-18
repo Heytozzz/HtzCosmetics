@@ -3,7 +3,7 @@ package com.heytozzz.htzcosmetics.client;
 import com.heytozzz.htzcosmetics.HtzCosmetics;
 import com.heytozzz.htzcosmetics.client.render.BakedCosmetic;
 import com.heytozzz.htzcosmetics.client.render.CosmeticBaker;
-import com.heytozzz.htzcosmetics.client.source.CosmeticSource;
+import com.heytozzz.htzcosmetics.core.source.CosmeticSource;
 import com.heytozzz.htzcosmetics.core.AssetCheck;
 import com.heytozzz.htzcosmetics.core.ValidationException;
 import com.heytozzz.htzcosmetics.core.crypto.TrustedKeys;
@@ -79,8 +79,12 @@ public final class CosmeticLibrary {
         return b == null ? null : b.definition();
     }
 
-    /** Loads everything from {@code source} in the background and swaps it in when ready. */
-    public void reload(CosmeticSource source) {
+    /**
+     * Loads everything from {@code source} in the background and swaps it in when ready.
+     *
+     * @param force re-install even if the manifest version did not change
+     */
+    public void reload(CosmeticSource source, boolean force) {
         loader.execute(() -> {
             try {
                 if (!TrustedKeys.isConfigured()) {
@@ -88,8 +92,20 @@ public final class CosmeticLibrary {
                     return;
                 }
                 long now = System.currentTimeMillis() / 1000L;
-                Manifest m = ManifestParser.verifyAndParse(source.manifest(), source.signature(), TrustedKeys.verifier(),
-                    now, lastAcceptedVersion);
+                long minVersion = Math.max(lastAcceptedVersion, source.lastAcceptedVersion());
+                byte[] manifestBytes = source.manifest();
+                byte[] signatureBytes = source.signature();
+                Manifest m = ManifestParser.verifyAndParse(manifestBytes, signatureBytes, TrustedKeys.verifier(),
+                    now, minVersion);
+                try {
+                    source.onManifestAccepted(manifestBytes, signatureBytes, m.manifestVersion());
+                } catch (Exception e) {
+                    HtzCosmetics.LOGGER.warn("Could not cache the cosmetics manifest: {}", e.toString());
+                }
+                Manifest current = manifest;
+                if (!force && current != null && current.manifestVersion() == m.manifestVersion()) {
+                    return; // nothing changed since the last check
+                }
                 if (m.skippedEntries() > 0) {
                     HtzCosmetics.LOGGER.warn("Ignored {} invalid or unsupported cosmetic entries", m.skippedEntries());
                 }

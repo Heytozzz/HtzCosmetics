@@ -65,10 +65,20 @@ loom {
     runConfigs.all {
         preferGradleTask = true
         generateRunConfig = true
-        runDirectory = rootProject.file("run") // shared by all versions
+    }
+    runConfigs.named("client") {
+        // Your manual test folder (worlds, options), shared by all versions. The automated in-game test uses
+        // its own throw-away folder (build/run/clientGameTest), because it deletes that folder before each run.
+        runDirectory = rootProject.file("run")
         // Development only: load cosmetics from the locally built (and signed) site/ folder.
+        // The in-game test (clientGameTest) does NOT set this, so it exercises the real GitHub Pages download.
         @Suppress("DEPRECATION") // Loom marks every run-config setter deprecated; no replacement yet
         property("htzcosmetics.devSite", rootProject.file("site").absolutePath)
+    }
+    // The in-game test inherits the client settings: blank the dev folder so it downloads from GitHub Pages.
+    runConfigs.matching { it.name == "clientGameTest" }.configureEach {
+        @Suppress("DEPRECATION")
+        property("htzcosmetics.devSite", "")
     }
 }
 

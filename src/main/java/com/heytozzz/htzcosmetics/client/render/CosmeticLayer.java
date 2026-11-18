@@ -3,6 +3,7 @@ package com.heytozzz.htzcosmetics.client.render;
 import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
 import com.heytozzz.htzcosmetics.client.EquippedCosmetics;
 import com.heytozzz.htzcosmetics.client.PlayerUuidAccess;
+import com.heytozzz.htzcosmetics.core.manifest.Category;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.PlayerModel;
@@ -14,7 +15,8 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.PlayerRenderState;
 
-import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -32,14 +34,16 @@ public final class CosmeticLayer extends RenderLayer<PlayerRenderState, PlayerMo
         if (state.isInvisible || state.isSpectator) return;
         UUID uuid = ((PlayerUuidAccess) state).htzcosmetics$getUuid();
         if (uuid == null) return;
-        Collection<String> ids = EquippedCosmetics.get(uuid);
+        List<String> ids = EquippedCosmetics.get(uuid);
         if (ids.isEmpty()) return;
 
         PlayerModel model = getParentModel();
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
+        EnumSet<Category> drawn = EnumSet.noneOf(Category.class);
         for (String id : ids) {
             BakedCosmetic cosmetic = CosmeticLibrary.get().baked(id);
             if (cosmetic == null) continue; // not loaded yet, or rejected by validation
+            if (!drawn.add(cosmetic.definition().category())) continue; // one per category
             ModelPart anchor = switch (cosmetic.definition().anchor()) {
                 case HEAD -> model.head;
                 case BODY -> model.body;

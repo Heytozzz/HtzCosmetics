@@ -5,6 +5,7 @@ import com.heytozzz.htzcosmetics.HtzCosmetics;
 import com.heytozzz.htzcosmetics.client.ClientBootstrap;
 import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
 import com.heytozzz.htzcosmetics.client.EquippedCosmetics;
+import com.heytozzz.htzcosmetics.client.RemoteSync;
 import com.heytozzz.htzcosmetics.client.render.CosmeticLayer;
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -14,6 +15,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
@@ -35,13 +37,14 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
             if (renderer instanceof PlayerRenderer playerRenderer) helper.register(new CosmeticLayer(playerRenderer));
         });
 
-        ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientBootstrap.loadCosmetics());
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientBootstrap.init());
+        ClientTickEvents.END_CLIENT_TICK.register(RemoteSync::tick);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
             ClientCommandManager.literal(HtzCosmetics.MOD_ID)
                 .executes(HtzCosmeticsFabricClient::status)
                 .then(ClientCommandManager.literal("list").executes(HtzCosmeticsFabricClient::list))
                 .then(ClientCommandManager.literal("reload").executes(ctx -> {
-                    ClientBootstrap.loadCosmetics();
+                    ClientBootstrap.loadCosmetics(true);
                     ctx.getSource().sendFeedback(Component.translatable("htzcosmetics.command.reloading"));
                     return 1;
                 }))

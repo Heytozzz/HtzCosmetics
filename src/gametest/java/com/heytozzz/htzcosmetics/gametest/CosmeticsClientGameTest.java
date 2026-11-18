@@ -1,5 +1,6 @@
 package com.heytozzz.htzcosmetics.gametest;
 
+import com.heytozzz.htzcosmetics.client.ClientBootstrap;
 import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
 import com.heytozzz.htzcosmetics.client.EquippedCosmetics;
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
@@ -9,9 +10,14 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 import net.minecraft.client.CameraType;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 /**
- * Automated in-game check: loads the signed local site, equips every cosmetic on the player and saves
- * screenshots from several angles (build/run/clientGameTest/screenshots). Run: gradlew :1.21.8-fabric:runClientGameTest
+ * Automated in-game check: downloads the signed site from GitHub Pages (production path, with disk cache), asks the
+ * real backend about a test player (row 00000000000040008000000000000001 in D1), equips every cosmetic and saves
+ * screenshots (versions/1.21.8-fabric/build/run/clientGameTest/screenshots). Run: gradlew :1.21.8-fabric:runClientGameTest
  */
 public final class CosmeticsClientGameTest implements FabricClientGameTest {
     @Override
@@ -21,7 +27,18 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             world.getServer().runCommand("time set noon");
             world.getServer().runCommand("weather clear");
 
-            context.waitFor(mc -> !CosmeticLibrary.get().available().isEmpty(), 400);
+            // Downloads the signed manifest + assets from GitHub Pages (no dev folder in this run).
+            context.waitFor(mc -> !CosmeticLibrary.get().available().isEmpty(), 600);
+
+            // Real backend round trip with the production HTTPS client (test player prepared in the database).
+            UUID probe = UUID.fromString(System.getProperty("htzcosmetics.test.probeUuid", "00000000-0000-4000-8000-000000000001"));
+            try {
+                Map<UUID, List<String>> remote = ClientBootstrap.backend().fetchEquipped(List.of(probe));
+                System.out.println("[htz-gametest] backend says " + probe + " wears " + remote.get(probe));
+                if (!List.of("top_hat").equals(remote.get(probe))) throw new AssertionError("unexpected backend answer: " + remote);
+            } catch (Exception e) {
+                throw new AssertionError("backend request failed", e);
+            }
             context.runOnClient(mc -> {
                 for (CosmeticDefinition def : CosmeticLibrary.get().available()) {
                     EquippedCosmetics.equip(mc.player.getUUID(), def);

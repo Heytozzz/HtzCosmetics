@@ -1,4 +1,4 @@
-package com.heytozzz.htzcosmetics.client.source;
+package com.heytozzz.htzcosmetics.core.source;
 
 import com.heytozzz.htzcosmetics.core.Limits;
 import com.heytozzz.htzcosmetics.core.crypto.Hashes;
