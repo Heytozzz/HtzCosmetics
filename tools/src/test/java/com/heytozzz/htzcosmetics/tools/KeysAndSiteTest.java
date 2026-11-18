@@ -179,4 +179,16 @@ class KeysAndSiteTest {
 
         assertFalse(Files.exists(tmp.resolve("site/manifest.json")), "nothing is published when a cosmetic fails");
     }
+    @Test
+    void checkCosmeticUsesTheSameRulesWithoutWritingAnything() throws Exception {
+        Path hat = cosmetics("top_hat");
+        assertTrue(SiteBuilder.checkCosmetic("top_hat", hat).isEmpty());
+
+        Files.writeString(hat.resolve("cosmetic.json"),
+            "{\"name\":{\"en_us\":\"Hat\"},\"category\":\"HEAD\",\"rarity\":\"RARE\",\"anchor\":\"LEFT_LEG\"}");
+        ToolException e = assertThrows(ToolException.class, () -> SiteBuilder.checkCosmetic("top_hat", hat));
+        assertTrue(e.getMessage().contains("anchor LEFT_LEG is not allowed"), e.getMessage());
+        assertThrows(ToolException.class, () -> SiteBuilder.checkCosmetic("Bad-Name", hat));
+        assertFalse(Files.exists(tmp.resolve("site")), "checking never writes a site");
+    }
 }

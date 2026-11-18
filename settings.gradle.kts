@@ -51,3 +51,6 @@ rootProject.name = "HtzCosmetics"
 
 // Offline owner tools (key generation, Blockbench conversion, manifest signing). Never shipped in the mod.
 include("tools")
+
+// HtzCosmetics Studio: desktop app for the owner that wraps the tools above. Never shipped in the mod.
+include("studio")

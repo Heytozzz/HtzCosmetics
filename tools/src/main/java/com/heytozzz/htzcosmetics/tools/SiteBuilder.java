@@ -127,6 +127,19 @@ public final class SiteBuilder {
         return new Summary(version, expiresAt, entries.size(), warnings);
     }
 
+    /**
+     * Checks ONE cosmetic folder with exactly the same rules as {@link #build}, without a signing key and without
+     * writing anything. Used by HtzCosmetics Studio to report problems per cosmetic.
+     *
+     * @return non-fatal warnings
+     * @throws ToolException with the same message {@link #build} would stop with
+     */
+    public static List<String> checkCosmetic(String id, Path folder) throws IOException {
+        List<String> warnings = new ArrayList<>();
+        buildCosmetic(id, folder, new LinkedHashMap<>(), warnings);
+        return warnings;
+    }
+
     private static Map<String, Object> buildCosmetic(String id, Path folder, Map<String, Asset> assets,
                                                      List<String> warnings) throws IOException {
         String label = "cosmetics/" + id;

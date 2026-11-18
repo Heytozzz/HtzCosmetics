@@ -1,5 +1,29 @@
 # Cómo añadir y publicar cosméticos
 
+## Usar HtzCosmetics Studio (lo más fácil)
+
+**HtzCosmetics Studio** es una aplicación de escritorio que hace todo lo de esta guía con botones, sin escribir comandos.
+
+**Abrirla:** haz doble clic en `HtzCosmetics Studio.bat`, en la carpeta del proyecto. La primera vez tarda un poco porque se prepara; después se abre en unos segundos. (También vale `.\gradlew.bat htzStudio`.)
+
+Pantalla principal (el día a día):
+
+- **+ Añadir cosmético**: arrastra el `.bbmodel` (y la textura `.png` si no va dentro), escribe el id y los nombres y elige categoría, rareza y anclaje. Todo se comprueba mientras escribes, con las mismas reglas que el mod, y verás el modelo en 3D. «Guardar» solo se activa cuando todo está bien.
+- **Haz clic en una tarjeta** para ver sus detalles; doble clic o **Editar** para cambiarla; **Eliminar** la manda a la papelera de reciclaje (pide confirmación).
+- **Comprobar**: revisa todos los cosméticos y te dice en español qué cosmético falla y por qué.
+- **Probar en el juego**: construye `site/` y abre Minecraft 1.21.8 de prueba con tus cosméticos. Ciérralo o pulsa **Detener** en el registro.
+- **Publicar…**: construye y firma `site/`, te enseña qué cambia (nuevos, cambiados, eliminados) y solo sube a Internet si confirmas.
+
+Abajo está el **registro**, donde ves lo que hace cada acción. Abajo a la izquierda se ve cuántos días faltan para que caduque la firma.
+
+**Mantenimiento / Avanzado** (abajo a la izquierda, en rojo) está aparte a propósito y cada acción pide confirmación:
+
+- **Firma**: fecha de caducidad de lo publicado, con aviso cuando quedan menos de 30 días, y **Renovar firma**.
+- **Claves**: comprueba que existen `primary.key` y `backup.key` (la app nunca las abre ni las copia) y **Rotar claves**, que pide escribir ROTAR.
+- **Backend**: tests, desplegar y actualizar las claves de Mojang.
+
+El resto de esta guía explica lo que hace la app por dentro, por si algún día quieres usar los comandos a mano.
+
 Todos los comandos se ejecutan en PowerShell, desde la carpeta del proyecto.
 
 ## 1. Crear un cosmético
