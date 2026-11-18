@@ -7,6 +7,7 @@ import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
 import com.heytozzz.htzcosmetics.client.OwnCosmetics;
 import com.heytozzz.htzcosmetics.client.RemoteSync;
 import com.heytozzz.htzcosmetics.client.gui.CosmeticsScreen;
+import com.heytozzz.htzcosmetics.client.gui.PlayerPreviewRenderer;
 import com.heytozzz.htzcosmetics.client.gui.ThumbnailsRenderer;
 import com.heytozzz.htzcosmetics.client.gui.WardrobeButton;
 import com.heytozzz.htzcosmetics.client.render.CosmeticLayer;
@@ -55,6 +56,7 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
 
         // 3D cosmetic thumbnails in the wardrobe menu.
         SpecialGuiElementRegistry.register(ctx -> new ThumbnailsRenderer(ctx.vertexConsumers()));
+        SpecialGuiElementRegistry.register(ctx -> new PlayerPreviewRenderer(ctx.vertexConsumers()));
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientBootstrap.init());
         KeyMapping openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.htzcosmetics.open",

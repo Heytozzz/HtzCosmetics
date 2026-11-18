@@ -74,6 +74,10 @@ public final class CosmeticsScreen extends Screen {
     private long highlightUntil;
     private PreviewMode previewMode = PreviewMode.FRONT;
     private float yaw;
+    // Preview without a world: the account's skin on a plain player model.
+    private java.util.function.Supplier<net.minecraft.client.resources.PlayerSkin> skin;
+    private net.minecraft.client.model.PlayerModel wideModel;
+    private net.minecraft.client.model.PlayerModel slimModel;
     private boolean draggingPreview;
     private long lastFrameNanos;
 
@@ -107,6 +111,15 @@ public final class CosmeticsScreen extends Screen {
         cardW = (gridW - gap - cols * gap) / cols;
         cardH = cardW + 22;
         rows = Math.max(1, (bodyBottom - bodyY - gap - 18) / (cardH + gap));
+
+        if (minecraft.player == null) {
+            skin = minecraft.getSkinManager().lookupInsecure(minecraft.getGameProfile());
+            var models = minecraft.getEntityModels();
+            wideModel = new net.minecraft.client.model.PlayerModel(
+                models.bakeLayer(net.minecraft.client.model.geom.ModelLayers.PLAYER), false);
+            slimModel = new net.minecraft.client.model.PlayerModel(
+                models.bakeLayer(net.minecraft.client.model.geom.ModelLayers.PLAYER_SLIM), true);
+        }
 
         search = new EditBox(font, gridX + 76, topY + 3, 92, 16, Component.translatable("htzcosmetics.screen.search"));
         search.setHint(Component.translatable("htzcosmetics.screen.search"));
@@ -379,13 +392,20 @@ public final class CosmeticsScreen extends Screen {
         if (player != null) {
             renderPlayer(g, previewX + 2, areaTop, previewX + previewW - 2, areaBottom, player);
             g.drawString(font, Component.translatable("htzcosmetics.screen.drag_hint"), previewX + 5, bodyY + 4, TEXT_FAINT, false);
-        } else {
-            var lines = font.split(Component.translatable("htzcosmetics.screen.no_preview"), previewW - 12);
-            int ty = (areaTop + areaBottom) / 2 - lines.size() * 5;
-            for (var line : lines) {
-                g.drawString(font, line, previewX + (previewW - font.width(line)) / 2, ty, TEXT_DIM, false);
-                ty += 10;
+        } else if (skin != null) {
+            // No world yet: draw the account's skin and worn cosmetics on a plain player model.
+            var playerSkin = skin.get();
+            var model = playerSkin.model() == net.minecraft.client.resources.PlayerSkin.Model.SLIM ? slimModel : wideModel;
+            List<BakedCosmetic> worn = new ArrayList<>();
+            java.util.EnumSet<Category> used = java.util.EnumSet.noneOf(Category.class);
+            for (String id : EquippedCosmetics.get(ClientState.self())) {
+                BakedCosmetic b = CosmeticLibrary.get().baked(id);
+                if (b != null && used.add(b.definition().category())) worn.add(b);
             }
+            float seconds = (System.currentTimeMillis() % 3_600_000L) / 1000.0F;
+            g.guiRenderState.submitPicturesInPictureState(PlayerPreviewRenderState.of(model, playerSkin.texture(), worn,
+                yaw, seconds, previewX + 2, areaTop, previewX + previewW - 2, areaBottom, g.scissorStack.peek()));
+            g.drawString(font, Component.translatable("htzcosmetics.screen.drag_hint"), previewX + 5, bodyY + 4, TEXT_FAINT, false);
         }
 
         // Front / Back / Spin
@@ -401,7 +421,7 @@ public final class CosmeticsScreen extends Screen {
                 previewMode = mode;
                 if (mode == PreviewMode.FRONT) yaw = 0;
                 if (mode == PreviewMode.BACK) yaw = 180;
-            }) + 3;
+            }, "preview:" + mode.name().toLowerCase(Locale.ROOT)) + 3;
         }
 
         // Equipped button

@@ -36,7 +36,13 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
         context.waitFor(mc -> mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen, 600);
         context.waitTicks(60); // let the title screen finish fading in
         context.takeScreenshot("htz_title_screen");
+        context.waitFor(mc -> CosmeticLibrary.get().definition("top_hat") != null, 600);
+        context.runOnClient(mc -> OwnCosmetics.equip(CosmeticLibrary.get().definition("top_hat")));
         clickWardrobeButton(context, "title");
+        context.runOnClient(mc -> ((CosmeticsScreen) mc.screen).regionCenter("back")); // keep screen
+        context.takeScreenshot("htz_title_preview_front");
+        click(context, "preview:back");
+        context.takeScreenshot("htz_title_preview_back");
         click(context, "back");
         check(context, mc -> mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen,
             "back arrow returns to the title screen");

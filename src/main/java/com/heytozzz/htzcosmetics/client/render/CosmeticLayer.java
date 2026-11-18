@@ -47,14 +47,7 @@ public final class CosmeticLayer extends RenderLayer<PlayerRenderState, PlayerMo
             BakedCosmetic cosmetic = CosmeticLibrary.get().baked(id);
             if (cosmetic == null) continue; // not loaded yet, or rejected by validation
             if (!drawn.add(cosmetic.definition().category())) continue; // one per category
-            ModelPart anchor = switch (cosmetic.definition().anchor()) {
-                case HEAD -> model.head;
-                case BODY -> model.body;
-                case LEFT_ARM -> model.leftArm;
-                case RIGHT_ARM -> model.rightArm;
-                case LEFT_LEG -> model.leftLeg;
-                case RIGHT_LEG -> model.rightLeg;
-            };
+            ModelPart anchor = CosmeticRenderUtil.anchorPart(model, cosmetic.definition().anchor());
             if (!anchor.visible) continue;
 
             pose.pushPose();
