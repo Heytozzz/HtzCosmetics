@@ -1,0 +1,15 @@
+{
+  "name": "htzcosmetics-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "deploy": "wrangler deploy",
+    "update-mojang-keys": "node scripts/update-mojang-keys.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.8.4",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.164.0"
+  }
+}

@@ -77,3 +77,37 @@ El mod lleva incrustadas solo las claves **públicas**, que no son secretas.
   ```
 
   La clave de reserva pasa a ser la principal y se crea una nueva de reserva. Después publica una versión nueva del mod. Las versiones antiguas del mod seguirán confiando en la clave filtrada hasta que los jugadores actualicen.
+
+## 4. Publicar en Internet
+
+Después de `htzBuildSite`, sube los cosméticos firmados a GitHub Pages:
+
+```powershell
+.\gradlew.bat htzPublishSite
+```
+
+Este comando vuelve a comprobar las firmas antes de subir nada y lo publica en la rama `gh-pages`, aparte de tu código. En 1 o 2 minutos aparece en https://heytozzz.github.io/HtzCosmetics/manifest.json.
+
+## 5. Backend (Cloudflare)
+
+Ya está desplegado en https://htzcosmetics.htzcosmetics-backend.workers.dev. Solo guarda el UUID de cada jugador y la lista de cosméticos que lleva equipados.
+
+Cómo se comprueba la identidad: cada cuenta de Minecraft tiene un certificado firmado por Mojang, el mismo que se usa para firmar el chat. El mod firma un reto con la clave privada de ese certificado, que nunca sale del PC, y el backend comprueba esa firma y la de Mojang. No hace falta llamar a Mojang, que bloquea las peticiones que llegan desde Cloudflare.
+
+Comandos útiles (dentro de la carpeta `backend`):
+
+```powershell
+npm test
+```
+
+```powershell
+npm run deploy
+```
+
+```powershell
+npm run update-mojang-keys
+```
+
+Usa el último solo si los inicios de sesión empiezan a fallar con `invalid_certificate`. Después de ejecutarlo, vuelve a lanzar `npm test` y `npm run deploy`.
+
+La clave secreta de los tokens (`TOKEN_SECRET`) solo está guardada en Cloudflare. Si alguna vez crees que se ha filtrado, ejecuta `npx wrangler secret put TOKEN_SECRET` y pega un valor aleatorio largo: todos los jugadores tendrán que volver a iniciar sesión, nada más.

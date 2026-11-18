@@ -3,6 +3,7 @@
 //   gradlew htzKeygen                      creates your signing keys (once)
 //   gradlew htzKeygen --args="--rotate"    replaces a leaked primary key with the backup
 //   gradlew htzBuildSite                   converts cosmetics/ into a signed site/ folder
+//   gradlew htzPublishSite                 uploads site/ to GitHub Pages
 //   gradlew htzVerifySite                  re-checks site/ exactly like the mod would
 
 plugins {
@@ -54,4 +55,5 @@ fun registerTool(name: String, mainClassName: String, text: String) {
 
 registerTool("htzKeygen", "KeyGenCommand", "Creates (or rotates) the Ed25519 manifest signing keys")
 registerTool("htzBuildSite", "BuildSiteCommand", "Builds and signs site/ from the cosmetics/ folder")
+registerTool("htzPublishSite", "PublishSiteCommand", "Uploads the verified site/ to GitHub Pages (gh-pages branch)")
 registerTool("htzVerifySite", "VerifySiteCommand", "Verifies site/ with the same checks the mod uses")

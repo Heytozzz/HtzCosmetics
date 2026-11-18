@@ -38,7 +38,7 @@ public final class BuildSiteCommand {
             System.out.println();
             System.out.println("Site built and verified: " + s.cosmetics() + " cosmetic(s), manifest version "
                 + s.manifestVersion() + ", valid until " + Instant.ofEpochSecond(s.expiresAt()).toString().substring(0, 10) + ".");
-            System.out.println("Upload the contents of " + out.toAbsolutePath() + " to GitHub Pages.");
+            System.out.println("Next: gradlew htzPublishSite (uploads it to GitHub Pages).");
             System.out.println("Re-run this command before that date (or whenever you change cosmetics).");
         });
     }
