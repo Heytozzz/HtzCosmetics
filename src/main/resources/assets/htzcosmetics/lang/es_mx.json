@@ -62,5 +62,6 @@
   "htzcosmetics.screen.help_rotate": "Arrastrar con clic izquierdo: girar",
   "htzcosmetics.screen.help_move": "Arrastrar con clic derecho: mover",
   "htzcosmetics.screen.help_zoom": "Rueda del ratón: zoom",
-  "htzcosmetics.screen.reset_view": "Restablecer"
+  "htzcosmetics.screen.reset_view": "Restablecer",
+  "key.category.htzcosmetics.main": "HtzCosmetics"
 }

@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 
 /**
@@ -50,7 +49,7 @@ public final class PlayerPreviewRenderer extends PictureInPictureRenderer<Player
 
         state.model().resetPose();
         int light = LightTexture.FULL_BRIGHT;
-        state.model().renderToBuffer(pose, bufferSource.getBuffer(RenderType.entityTranslucent(state.skin())), light,
+        state.model().renderToBuffer(pose, bufferSource.getBuffer(CosmeticRenderUtil.translucent(state.skin())), light,
             OverlayTexture.NO_OVERLAY);
         for (BakedCosmetic c : state.cosmetics()) {
             CosmeticRenderUtil.drawOnModel(state.model(), c, pose, bufferSource, state.seconds(), light,

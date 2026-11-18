@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.Unique;
 import java.util.UUID;
 
 @Mixin(PlayerRenderState.class)
-public class PlayerRenderStateMixin implements PlayerUuidAccess {
+public class RenderStateUuidMixin implements PlayerUuidAccess {
     @Unique
     private UUID htzcosmetics$uuid;
 

@@ -6,9 +6,9 @@
   "client": [
     "ModelPartAccessor",
     "OptionsMixin",
-    "PlayerAccessor",
-    "PlayerRenderStateMixin",
-    "PlayerRendererMixin"
+    "RenderStateUuidMixin",
+    "RendererUuidMixin",
+    "SkinPartsAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

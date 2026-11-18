@@ -62,5 +62,6 @@
   "htzcosmetics.screen.help_rotate": "Left drag: rotate",
   "htzcosmetics.screen.help_move": "Right drag: move",
   "htzcosmetics.screen.help_zoom": "Mouse wheel: zoom",
-  "htzcosmetics.screen.reset_view": "Reset"
+  "htzcosmetics.screen.reset_view": "Reset",
+  "key.category.htzcosmetics.main": "HtzCosmetics"
 }

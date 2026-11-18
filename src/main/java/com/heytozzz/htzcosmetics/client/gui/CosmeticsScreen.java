@@ -12,11 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.LivingEntity;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -75,7 +71,7 @@ public final class CosmeticsScreen extends Screen {
     private PreviewMode previewMode = PreviewMode.FRONT;
     private float yaw;
     // Preview without a world: the account's skin on a plain player model.
-    private java.util.function.Supplier<net.minecraft.client.resources.PlayerSkin> skin;
+    private java.util.function.Supplier<GuiCompat.SkinInfo> skin;
     private net.minecraft.client.model.PlayerModel wideModel;
     private net.minecraft.client.model.PlayerModel slimModel;
     private boolean draggingPreview;
@@ -117,8 +113,10 @@ public final class CosmeticsScreen extends Screen {
         cardH = cardW + 22;
         rows = Math.max(1, (bodyBottom - bodyY - gap - 18) / (cardH + gap));
 
-        if (minecraft.player == null) {
-            skin = minecraft.getSkinManager().lookupInsecure(minecraft.getGameProfile());
+        {
+            // The preview always draws the account's skin with the worn cosmetics on a plain player model
+            // (works the same in every Minecraft version, with or without a world).
+            skin = GuiCompat.accountSkin(minecraft);
             var models = minecraft.getEntityModels();
             wideModel = new net.minecraft.client.model.PlayerModel(
                 models.bakeLayer(net.minecraft.client.model.geom.ModelLayers.PLAYER), false);
@@ -199,7 +197,7 @@ public final class CosmeticsScreen extends Screen {
 
     private void panel(GuiGraphics g, int x, int y, int w, int h) {
         g.fill(x, y, x + w, y + h, PANEL);
-        g.renderOutline(x, y, w, h, PANEL_EDGE);
+        GuiCompat.outline(g, x, y, w, h, PANEL_EDGE);
     }
 
     private int chip(GuiGraphics g, int x, int y, Component label, int textColor, boolean on, int mx, int my,
@@ -226,7 +224,7 @@ public final class CosmeticsScreen extends Screen {
         int by = topY + 3;
         boolean backHover = mx >= bx && mx < bx + 16 && my >= by && my < by + 16;
         g.fill(bx, by, bx + 16, by + 16, backHover ? CHIP_ON : CHIP);
-        g.renderOutline(bx, by, 16, 16, PANEL_EDGE);
+        GuiCompat.outline(g, bx, by, 16, 16, PANEL_EDGE);
         drawLeftArrow(g, bx + 4, by + 4, backHover ? TEXT : TEXT_DIM);
         if (backHover) g.setTooltipForNextFrame(font, Component.translatable("htzcosmetics.screen.back_tooltip"), mx, my);
         regions.add(new Region(bx, by, 16, 16, this::onClose, "back"));
@@ -352,10 +350,10 @@ public final class CosmeticsScreen extends Screen {
         g.fill(x, y, x + cardW, y + cardH, hover ? CARD_HOVER : CARD);
         g.fill(x + 1, y + 1, x + cardW - 1, y + cardW, THUMB_BG);
         g.fill(x, y + cardW, x + cardW, y + cardW + 1, rc);
-        if (worn) g.renderOutline(x, y, cardW, cardH, WORN);
+        if (worn) GuiCompat.outline(g, x, y, cardW, cardH, WORN);
         if (def.id().equals(highlightId) && System.currentTimeMillis() < highlightUntil
             && (System.currentTimeMillis() / 200) % 2 == 0) {
-            g.renderOutline(x - 1, y - 1, cardW + 2, cardH + 2, ACCENT);
+            GuiCompat.outline(g, x - 1, y - 1, cardW + 2, cardH + 2, ACCENT);
         }
 
         BakedCosmetic baked = CosmeticLibrary.get().baked(def.id());
@@ -393,14 +391,9 @@ public final class CosmeticsScreen extends Screen {
         panel(g, previewX, bodyY, previewW, h);
         int areaTop = bodyY + 14;
         int areaBottom = bodyBottom - 64;
-        LivingEntity player = minecraft != null ? minecraft.player : null;
-        if (player != null) {
-            renderPlayer(g, previewX + 2, areaTop, previewX + previewW - 2, areaBottom, player);
-            drawPreviewControls(g, mx, my);
-        } else if (skin != null) {
-            // No world yet: draw the account's skin and worn cosmetics on a plain player model.
+        if (skin != null) {
             var playerSkin = skin.get();
-            var model = playerSkin.model() == net.minecraft.client.resources.PlayerSkin.Model.SLIM ? slimModel : wideModel;
+            var model = playerSkin.slim() ? slimModel : wideModel;
             List<BakedCosmetic> worn = new ArrayList<>();
             java.util.EnumSet<Category> used = java.util.EnumSet.noneOf(Category.class);
             for (String id : EquippedCosmetics.get(ClientState.self())) {
@@ -436,7 +429,7 @@ public final class CosmeticsScreen extends Screen {
         Component label = Component.translatable("htzcosmetics.screen.equipped_button", count);
         boolean hover = mx >= previewX + 4 && mx < previewX + previewW - 4 && my >= by && my < by + 18;
         g.fill(previewX + 4, by, previewX + previewW - 4, by + 18, hover ? CHIP_ON : CHIP);
-        g.renderOutline(previewX + 4, by, previewW - 8, 18, PANEL_EDGE);
+        GuiCompat.outline(g, previewX + 4, by, previewW - 8, 18, PANEL_EDGE);
         g.drawCenteredString(font, label, previewX + previewW / 2, by + 5, TEXT);
         regions.add(new Region(previewX + 4, by, previewW - 8, 18, () -> equippedWindow = true, "equipped_button"));
 
@@ -468,31 +461,6 @@ public final class CosmeticsScreen extends Screen {
         zoom = 1.0F;
         panX = 0;
         panY = 0;
-    }
-
-    private void renderPlayer(GuiGraphics g, int x0, int y0, int x1, int y1, LivingEntity entity) {
-        float bodyRot = entity.yBodyRot;
-        float yRot = entity.getYRot();
-        float xRot = entity.getXRot();
-        float headRotO = entity.yHeadRotO;
-        float headRot = entity.yHeadRot;
-        float facing = 180.0F + yaw;
-        entity.yBodyRot = facing;
-        entity.setYRot(facing);
-        entity.setXRot(0);
-        entity.yHeadRot = facing;
-        entity.yHeadRotO = facing;
-        Quaternionf pose = new Quaternionf().rotateZ((float) Math.PI);
-        Quaternionf camera = new Quaternionf();
-        float scale = Math.max(20, Math.min((y1 - y0) / 2 - 4, (x1 - x0) / 2)) * zoom;
-        // Translation is in blocks after scaling: convert the pan (GUI pixels) into blocks (+Y = down on screen).
-        InventoryScreen.renderEntityInInventory(g, x0, y0, x1, y1, scale,
-            new Vector3f(panX / scale, entity.getBbHeight() / 2.0F + 0.0625F + panY / scale, 0), pose, camera, entity);
-        entity.yBodyRot = bodyRot;
-        entity.setYRot(yRot);
-        entity.setXRot(xRot);
-        entity.yHeadRotO = headRotO;
-        entity.yHeadRot = headRot;
     }
 
     private void drawEquippedWindow(GuiGraphics g, int mx, int my) {
@@ -593,11 +561,34 @@ public final class CosmeticsScreen extends Screen {
 
     // ------------------------------------------------------------------ input (version-specific signatures)
 
+    //? if >=1.21.9 {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (onMouseClicked(event.x(), event.y(), event.button())) return true;
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dx, double dy) {
+        if (handleDrag(event.x(), event.y(), dx, dy)) return true;
+        return super.mouseDragged(event, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        onMouseReleased();
+        return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (onKeyPressed(event.key())) return true;
+        return super.keyPressed(event);
+    }
+    *///?} else {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && handleClick(mouseX, mouseY)) return true;
-        if (button == 1 && handleRightClick(mouseX, mouseY)) return true;
-        if (equippedWindow) return true;
+        if (onMouseClicked(mouseX, mouseY, button)) return true;
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
@@ -609,10 +600,16 @@ public final class CosmeticsScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        draggingPreview = false;
-        panningPreview = false;
+        onMouseReleased();
         return super.mouseReleased(mouseX, mouseY, button);
     }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (onKeyPressed(keyCode)) return true;
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+    //?}
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
@@ -624,16 +621,27 @@ public final class CosmeticsScreen extends Screen {
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    // ------------------------------------------------------------------ input (version-independent)
+
+    /** @return true if consumed (also true for any click while the Equipped window is open) */
+    private boolean onMouseClicked(double mx, double my, int button) {
+        if (button == 0 && handleClick(mx, my)) return true;
+        if (button == 1 && handleRightClick(mx, my)) return true;
+        return equippedWindow;
+    }
+
+    private void onMouseReleased() {
+        draggingPreview = false;
+        panningPreview = false;
+    }
+
+    private boolean onKeyPressed(int keyCode) {
         if (keyCode == 256 && equippedWindow) { // Escape closes the window first
             equippedWindow = false;
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return false;
     }
-
-    // ------------------------------------------------------------------ input (version-independent)
 
     private boolean handleClick(double mx, double my) {
         for (int i = regions.size() - 1; i >= 0; i--) {

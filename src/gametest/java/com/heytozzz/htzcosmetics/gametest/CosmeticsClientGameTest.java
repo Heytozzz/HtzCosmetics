@@ -8,7 +8,7 @@ import com.heytozzz.htzcosmetics.client.gui.CosmeticsOptionsScreen;
 import com.heytozzz.htzcosmetics.client.gui.CosmeticsScreen;
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
 import com.heytozzz.htzcosmetics.core.signal.ChangeSignalPolicy;
-import com.heytozzz.htzcosmetics.mixin.PlayerAccessor;
+import com.heytozzz.htzcosmetics.mixin.SkinPartsAccessor;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
@@ -74,10 +74,10 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             if (status != OwnCosmetics.Status.LOCAL_ONLY) throw new AssertionError("expected LOCAL_ONLY, got " + status);
 
             // Change signal: the bit we send must come back through the server's synced player data.
-            byte before = context.computeOnClient(mc -> mc.player.getEntityData().get(PlayerAccessor.htzcosmetics$skinPartsData()));
+            byte before = context.computeOnClient(mc -> mc.player.getEntityData().get(SkinPartsAccessor.htzcosmetics$skinPartsData()));
             context.runOnClient(mc -> ChangeSignal.send());
             context.waitTicks(20);
-            byte after = context.computeOnClient(mc -> mc.player.getEntityData().get(PlayerAccessor.htzcosmetics$skinPartsData()));
+            byte after = context.computeOnClient(mc -> mc.player.getEntityData().get(SkinPartsAccessor.htzcosmetics$skinPartsData()));
             System.out.println("[htz-gametest] skin parts byte before=" + (before & 0xFF) + " after=" + (after & 0xFF));
             if (((before ^ after) & ChangeSignalPolicy.SIGNAL_BIT) == 0) throw new AssertionError("signal bit was not relayed");
             if ((before & 0x7F) != (after & 0x7F)) throw new AssertionError("visible skin parts changed");

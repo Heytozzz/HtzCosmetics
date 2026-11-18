@@ -22,11 +22,11 @@ final class CosmeticAnimator {
     private CosmeticAnimator() {
     }
 
-    static void pose(BakedCosmetic cosmetic, PlayerRenderState state) {
-        AnimationClip.Trigger wanted = state.isCrouching ? AnimationClip.Trigger.SNEAK
+    /** Which clip fits the player's current situation. */
+    static AnimationClip.Trigger trigger(PlayerRenderState state) {
+        return state.isCrouching ? AnimationClip.Trigger.SNEAK
             : state.walkAnimationSpeed > WALK_THRESHOLD ? AnimationClip.Trigger.WALK
             : AnimationClip.Trigger.IDLE;
-        poseAt(cosmetic, state.ageInTicks / 20.0F, wanted);
     }
 
     /** Poses the cosmetic at {@code seconds} for the given situation (also used by menu thumbnails). */

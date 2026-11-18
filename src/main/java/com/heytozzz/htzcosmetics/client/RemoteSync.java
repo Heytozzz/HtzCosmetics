@@ -3,7 +3,7 @@ package com.heytozzz.htzcosmetics.client;
 import com.heytozzz.htzcosmetics.HtzCosmetics;
 import com.heytozzz.htzcosmetics.core.net.BackendClient;
 import com.heytozzz.htzcosmetics.core.signal.ChangeSignalPolicy;
-import com.heytozzz.htzcosmetics.mixin.PlayerAccessor;
+import com.heytozzz.htzcosmetics.mixin.SkinPartsAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 
@@ -76,7 +76,7 @@ public final class RemoteSync {
             // Only real online accounts (version 4 UUIDs); offline-mode players and NPCs cannot have cosmetics.
             if (id.equals(self) || id.version() != 4) continue;
             if (listenToSignals) {
-                byte parts = p.getEntityData().get(PlayerAccessor.htzcosmetics$skinPartsData());
+                byte parts = p.getEntityData().get(SkinPartsAccessor.htzcosmetics$skinPartsData());
                 boolean bit = (parts & ChangeSignalPolicy.SIGNAL_BIT) != 0;
                 if (SIGNALS.observe(id, bit, now)) fetchFresh(backend, id);
             }

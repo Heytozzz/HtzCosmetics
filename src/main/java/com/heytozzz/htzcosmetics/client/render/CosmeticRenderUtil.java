@@ -7,6 +7,7 @@ import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.resources.ResourceLocation;
 
 /** Shared drawing helpers for cosmetics outside the normal player render layer (menu thumbnails and preview). */
 public final class CosmeticRenderUtil {
@@ -42,6 +43,24 @@ public final class CosmeticRenderUtil {
     }
 
     static RenderType renderType(BakedCosmetic c) {
-        return c.translucent() ? RenderType.entityTranslucent(c.texture()) : RenderType.entityCutoutNoCull(c.texture());
+        return c.translucent() ? translucent(c.texture()) : cutout(c.texture());
+    }
+
+    /** Entity render type with smooth transparency (skins, translucent cosmetics). */
+    public static RenderType translucent(ResourceLocation texture) {
+        //? if >=1.21.11 {
+        /*return net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(texture);
+        *///?} else {
+        return RenderType.entityTranslucent(texture);
+        //?}
+    }
+
+    /** Entity render type with on/off transparency, both faces drawn. */
+    public static RenderType cutout(ResourceLocation texture) {
+        //? if >=1.21.11 {
+        /*return net.minecraft.client.renderer.rendertype.RenderTypes.entityCutoutNoCull(texture);
+        *///?} else {
+        return RenderType.entityCutoutNoCull(texture);
+        //?}
     }
 }

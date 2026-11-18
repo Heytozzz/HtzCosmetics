@@ -7,6 +7,7 @@ import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
 import com.heytozzz.htzcosmetics.client.OwnCosmetics;
 import com.heytozzz.htzcosmetics.client.RemoteSync;
 import com.heytozzz.htzcosmetics.client.gui.CosmeticsScreen;
+import com.heytozzz.htzcosmetics.client.gui.GuiCompat;
 import com.heytozzz.htzcosmetics.client.gui.PlayerPreviewRenderer;
 import com.heytozzz.htzcosmetics.client.gui.ThumbnailsRenderer;
 import com.heytozzz.htzcosmetics.client.gui.WardrobeButton;
@@ -25,7 +26,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRe
 import net.fabricmc.fabric.api.client.rendering.v1.SpecialGuiElementRegistry;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
@@ -59,8 +59,7 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
         SpecialGuiElementRegistry.register(ctx -> new PlayerPreviewRenderer(ctx.vertexConsumers()));
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientBootstrap.init());
-        KeyMapping openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.htzcosmetics.open",
-            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_J, "key.categories.htzcosmetics"));
+        KeyMapping openKey = KeyBindingHelper.registerKeyBinding(GuiCompat.keyMapping("key.htzcosmetics.open", GLFW.GLFW_KEY_J));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             RemoteSync.tick(client);
             while (openKey.consumeClick()) {

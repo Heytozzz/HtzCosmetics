@@ -34,9 +34,13 @@ stonecutter {
             for (loader in loaders) version("$version-$loader", version).buildscript("build.$loader.gradle.kts")
         }
 
-        // Phase 8 will add: 1.21.10, 1.21.11, 26.1.2, 26.2, 26.3 (fabric)
-        // and later 1.20.1 / 1.21.1 (forge, neoforge).
+        // 1.21.9 is intentionally not supported. Later: 1.20.1 / 1.21.1 (forge, neoforge).
         match("1.21.8", "fabric")
+        match("1.21.10", "fabric")
+        match("1.21.11", "fabric")
+        // match("26.1", "fabric")   // also runs on 26.1.1 and 26.1.2 (being ported)
+        // match("26.2", "fabric")   // (being ported)
+        // match("26.3", "fabric")   // (being ported)
 
         // The version whose code is "plain" (uncommented) in src/ when committed to git.
         vcsVersion = "1.21.8-fabric"

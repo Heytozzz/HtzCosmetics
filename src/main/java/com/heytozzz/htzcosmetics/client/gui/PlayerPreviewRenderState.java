@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 
-/** Player preview used when there is no world: the player model with the account's skin and worn cosmetics. */
+/** Wardrobe preview: the player model with the account's skin and worn cosmetics. */
 public record PlayerPreviewRenderState(PlayerModel model, ResourceLocation skin, List<BakedCosmetic> cosmetics,
                                        float yawDegrees, float seconds, float zoom, float panX, float panY,
                                        int x0, int y0, int x1, int y1, ScreenRectangle scissorArea, ScreenRectangle bounds)

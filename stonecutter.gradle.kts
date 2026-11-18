@@ -21,6 +21,21 @@ stonecutter parameters {
     swaps["minecraft"] = "\"${current.version}\";"
 
     replacements {
+        // 1.21.9 renamed the player renderer and its render state ("avatars" also cover mannequins).
+        string(current.parsed >= "1.21.9") {
+            replace("PlayerRenderState", "AvatarRenderState")
+        }
+        string(current.parsed >= "1.21.9") {
+            replace("PlayerRenderer", "AvatarRenderer")
+        }
+        // 1.21.11 moved the player model and render types into new packages.
+        string(current.parsed >= "1.21.11") {
+            replace("net.minecraft.client.model.PlayerModel", "net.minecraft.client.model.player.PlayerModel")
+        }
+        string(current.parsed >= "1.21.11") {
+            replace("net.minecraft.client.renderer.RenderType;", "net.minecraft.client.renderer.rendertype.RenderType;")
+        }
+        // (The RenderType factory methods moved to RenderTypes: handled in CosmeticRenderUtil.)
         // Mojang renamed ResourceLocation -> Identifier in 1.21.11.
         string(current.parsed >= "1.21.11") {
             replace("ResourceLocation", "Identifier")
