@@ -23,14 +23,22 @@ final class CosmeticAnimator {
     }
 
     static void pose(BakedCosmetic cosmetic, PlayerRenderState state) {
+        AnimationClip.Trigger wanted = state.isCrouching ? AnimationClip.Trigger.SNEAK
+            : state.walkAnimationSpeed > WALK_THRESHOLD ? AnimationClip.Trigger.WALK
+            : AnimationClip.Trigger.IDLE;
+        poseAt(cosmetic, state.ageInTicks / 20.0F, wanted);
+    }
+
+    /** Poses the cosmetic at {@code seconds} for the given situation (also used by menu thumbnails). */
+    static void poseAt(BakedCosmetic cosmetic, float seconds, AnimationClip.Trigger wanted) {
         List<AnimationClip> clips = cosmetic.animations();
         if (clips.isEmpty()) return;
         ModelPart[] bones = cosmetic.bones();
         for (ModelPart bone : bones) bone.resetPose();
 
-        AnimationClip clip = choose(clips, state);
+        AnimationClip clip = choose(clips, wanted);
         if (clip == null) return;
-        float time = (state.ageInTicks / 20.0F) % clip.length();
+        float time = seconds % clip.length();
 
         for (AnimationClip.BoneTrack track : clip.tracks()) {
             ModelPart part = bones[track.boneIndex()];
@@ -55,10 +63,7 @@ final class CosmeticAnimator {
         }
     }
 
-    private static AnimationClip choose(List<AnimationClip> clips, PlayerRenderState state) {
-        AnimationClip.Trigger wanted = state.isCrouching ? AnimationClip.Trigger.SNEAK
-            : state.walkAnimationSpeed > WALK_THRESHOLD ? AnimationClip.Trigger.WALK
-            : AnimationClip.Trigger.IDLE;
+    private static AnimationClip choose(List<AnimationClip> clips, AnimationClip.Trigger wanted) {
         AnimationClip idle = null;
         for (AnimationClip c : clips) {
             if (c.trigger() == wanted) return c;

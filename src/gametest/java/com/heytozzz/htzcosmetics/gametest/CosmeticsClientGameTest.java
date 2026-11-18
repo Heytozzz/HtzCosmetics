@@ -121,12 +121,71 @@ public final class CosmeticsClientGameTest implements FabricClientGameTest {
             context.setScreen(() -> new CosmeticsScreen(null));
             context.waitTicks(10);
             context.takeScreenshot("htz_equip_screen");
+            // Real mouse clicks on the wardrobe (what a player does).
+            click(context, "equipped_button");
+            check(context, mc -> ((CosmeticsScreen) mc.screen).isEquippedWindowOpen(), "Equipped button opens the window");
+            context.takeScreenshot("htz_equipped_window");
+            click(context, "window:remove:top_hat");
+            check(context, mc -> !OwnCosmetics.isEquipped("top_hat"), "Remove takes the cosmetic off");
+            clickAt(context, 3, 3);
+            check(context, mc -> !((CosmeticsScreen) mc.screen).isEquippedWindowOpen(), "click outside closes the window");
+            if (hasHalo) {
+                click(context, "card:angel_halo");
+                check(context, mc -> OwnCosmetics.isEquipped("angel_halo"), "clicking a card equips it");
+                click(context, "equipped_button");
+                click(context, "window:go:angel_halo");
+                check(context, mc -> {
+                    CosmeticsScreen s = (CosmeticsScreen) mc.screen;
+                    return !s.isEquippedWindowOpen() && s.selectedCategory() == com.heytozzz.htzcosmetics.core.manifest.Category.HEAD;
+                }, "Go closes the window and jumps to the cosmetic's category");
+                context.takeScreenshot("htz_after_go");
+            }
+            // Drag the preview to rotate the player.
+            int[] center = context.computeOnClient(mc -> ((CosmeticsScreen) mc.screen).previewCenter());
+            double guiScale = context.computeOnClient(mc -> mc.getWindow().getGuiScale());
+            context.getInput().setCursorPos(center[0] * guiScale, center[1] * guiScale);
+            context.getInput().holdMouse(0);
+            context.waitTick();
+            context.getInput().moveCursor(60 * guiScale, 0);
+            context.waitTick();
+            context.getInput().releaseMouse(0);
+            context.waitTicks(2);
+            check(context, mc -> ((CosmeticsScreen) mc.screen).previewYaw() != 0, "dragging rotates the preview");
+            context.takeScreenshot("htz_preview_dragged");
+
+            // Big screen: 1920x1080 at GUI scale 3 (rarity filter shows as chips).
+            context.getInput().resizeWindow(1920, 1080);
+            context.runOnClient(mc -> {
+                mc.options.guiScale().set(3);
+                mc.resizeDisplay();
+            });
+            context.waitTicks(5);
+            context.takeScreenshot("htz_equip_screen_1080p");
 
             context.setScreen(() -> new CosmeticsOptionsScreen(null));
             context.waitTicks(5);
             context.takeScreenshot("htz_options_screen");
             context.setScreen(() -> null);
         }
+    }
+
+    private static void click(ClientGameTestContext context, String key) {
+        int[] p = context.computeOnClient(mc -> ((CosmeticsScreen) mc.screen).regionCenter(key));
+        if (p == null) throw new AssertionError("nothing clickable named " + key);
+        clickAt(context, p[0], p[1]);
+    }
+
+    private static void clickAt(ClientGameTestContext context, int guiX, int guiY) {
+        double scale = context.computeOnClient(mc -> mc.getWindow().getGuiScale());
+        context.getInput().setCursorPos(guiX * scale + scale / 2, guiY * scale + scale / 2);
+        context.getInput().pressMouse(0);
+        context.waitTicks(2);
+    }
+
+    private static void check(ClientGameTestContext context,
+                              java.util.function.Predicate<net.minecraft.client.Minecraft> condition, String what) {
+        if (!context.computeOnClient(condition::test)) throw new AssertionError("failed: " + what);
+        System.out.println("[htz-gametest] ok: " + what);
     }
 
     /**

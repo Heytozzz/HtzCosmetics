@@ -12,7 +12,10 @@ import java.util.List;
  *
  * @param bones      the baked part of each model bone (same order as the model), for animation
  * @param animations declarative clips; empty for static cosmetics
+ * @param center     model bounding-box center in model pixels (for thumbnails)
+ * @param size       largest bounding-box side in model pixels (for thumbnails)
  */
 public record BakedCosmetic(CosmeticDefinition definition, ModelPart root, ModelPart[] bones,
-                            List<AnimationClip> animations, ResourceLocation texture, boolean translucent) {
+                            List<AnimationClip> animations, ResourceLocation texture, boolean translucent,
+                            float[] center, float size) {
 }

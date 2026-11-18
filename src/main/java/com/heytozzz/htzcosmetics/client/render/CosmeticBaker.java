@@ -23,8 +23,11 @@ public final class CosmeticBaker {
     private CosmeticBaker() {
     }
 
-    /** Result of baking: the root part plus each bone's part (same order as the model's bones). */
-    public record Baked(ModelPart root, ModelPart[] bones) {
+    /**
+     * Result of baking: the root part plus each bone's part (same order as the model's bones), and the approximate
+     * bounding box of the model in model pixels (used to frame menu thumbnails).
+     */
+    public record Baked(ModelPart root, ModelPart[] bones, float[] center, float size) {
     }
 
     public static Baked bake(CosmeticModel model) {
@@ -52,7 +55,30 @@ public final class CosmeticBaker {
         for (int i = 0; i < n; i++) {
             if (bones.get(i).parentIndex() < 0) roots.put(bones.get(i).name(), parts[i]);
         }
-        return new Baked(new ModelPart(List.of(), roots), parts);
+        return new Baked(new ModelPart(List.of(), roots), parts, bounds(model, 0), bounds(model, 1)[0]);
+    }
+
+    /** mode 0: center (x, y, z); mode 1: {largest side}. Bone rotations are ignored (good enough for framing). */
+    private static float[] bounds(CosmeticModel model, int mode) {
+        float[] min = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE};
+        float[] max = {-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+        List<Bone> bones = model.bones();
+        float[][] offset = new float[bones.size()][3];
+        for (int i = 0; i < bones.size(); i++) {
+            Bone b = bones.get(i);
+            for (int a = 0; a < 3; a++) {
+                offset[i][a] = (float) b.pivot()[a] + (b.parentIndex() >= 0 ? offset[b.parentIndex()][a] : 0);
+            }
+            for (Cube c : b.cubes()) {
+                for (int a = 0; a < 3; a++) {
+                    min[a] = Math.min(min[a], offset[i][a] + (float) (c.origin()[a] - c.inflate()));
+                    max[a] = Math.max(max[a], offset[i][a] + (float) (c.origin()[a] + c.size()[a] + c.inflate()));
+                }
+            }
+        }
+        if (min[0] > max[0]) return mode == 0 ? new float[3] : new float[]{16};
+        if (mode == 0) return new float[]{(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2};
+        return new float[]{Math.max(1, Math.max(max[0] - min[0], Math.max(max[1] - min[1], max[2] - min[2])))};
     }
 
     private static ModelPart.Cube toVanilla(Cube c, int texWidth, int texHeight) {

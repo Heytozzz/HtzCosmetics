@@ -7,6 +7,7 @@ import com.heytozzz.htzcosmetics.client.CosmeticLibrary;
 import com.heytozzz.htzcosmetics.client.OwnCosmetics;
 import com.heytozzz.htzcosmetics.client.RemoteSync;
 import com.heytozzz.htzcosmetics.client.gui.CosmeticsScreen;
+import com.heytozzz.htzcosmetics.client.gui.ThumbnailsRenderer;
 import com.heytozzz.htzcosmetics.client.render.CosmeticLayer;
 import com.heytozzz.htzcosmetics.core.manifest.CosmeticDefinition;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -19,6 +20,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.SpecialGuiElementRegistry;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -40,6 +42,9 @@ public final class HtzCosmeticsFabricClient implements ClientModInitializer {
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
             if (renderer instanceof PlayerRenderer playerRenderer) helper.register(new CosmeticLayer(playerRenderer));
         });
+
+        // 3D cosmetic thumbnails in the wardrobe menu.
+        SpecialGuiElementRegistry.register(ctx -> new ThumbnailsRenderer(ctx.vertexConsumers()));
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientBootstrap.init());
         KeyMapping openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.htzcosmetics.open",

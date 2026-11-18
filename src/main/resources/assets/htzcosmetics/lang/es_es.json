@@ -46,5 +46,16 @@
   "htzcosmetics.options.send_signal": "Avisar a los cercanos de cambios",
   "htzcosmetics.options.send_signal.tooltip": "Al cambiar de cosméticos, los jugadores cercanos con el mod lo ven al momento en vez de en un minuto.",
   "htzcosmetics.options.receive_signal": "Actualizar a otros al instante",
-  "htzcosmetics.options.receive_signal.tooltip": "Reacciona al momento cuando un jugador cercano cambia de cosméticos."
+  "htzcosmetics.options.receive_signal.tooltip": "Reacciona al momento cuando un jugador cercano cambia de cosméticos.",
+  "htzcosmetics.screen.animated": "animado",
+  "htzcosmetics.screen.worn": "Puesto",
+  "htzcosmetics.screen.drag_hint": "Arrastra para girar",
+  "htzcosmetics.screen.front": "Frente",
+  "htzcosmetics.screen.back": "Espalda",
+  "htzcosmetics.screen.spin": "Girar",
+  "htzcosmetics.screen.equipped_button": "Equipados (%s)",
+  "htzcosmetics.screen.equipped_title": "Equipados",
+  "htzcosmetics.screen.equipped_empty": "No llevas nada puesto.",
+  "htzcosmetics.screen.remove": "Quitar",
+  "htzcosmetics.screen.go": "Ir"
 }

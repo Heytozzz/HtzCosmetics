@@ -50,8 +50,11 @@ dependencies {
     // Only for the in-game test source set; never shipped.
     "modGametestImplementation"(fabricApi.module("fabric-client-gametest-api-v1", sc.properties["deps.fabric_api"]))
 
-    fapi("fabric-api-base", "fabric-command-api-v2", "fabric-lifecycle-events-v1", "fabric-resource-loader-v0",
-        "fabric-rendering-v1", "fabric-key-binding-api-v1")
+    // Some Fabric API modules were renamed over time.
+    val keyModule = if (sc.current.parsed >= "26.1") "fabric-key-mapping-api-v1" else "fabric-key-binding-api-v1"
+    val resourceModule = if (sc.current.parsed >= "1.21.11") "fabric-resource-loader-v1" else "fabric-resource-loader-v0"
+    fapi("fabric-api-base", "fabric-command-api-v2", "fabric-lifecycle-events-v1", resourceModule,
+        "fabric-rendering-v1", keyModule)
 
     // Optional compatibility testing with third-party mods copied into devmods/mods (never committed):
     //   gradlew :1.21.8-fabric:runClientGameTest -PhtzCompat

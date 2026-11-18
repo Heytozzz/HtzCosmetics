@@ -150,7 +150,7 @@ public final class CosmeticLibrary {
                 }
                 CosmeticBaker.Baked model = CosmeticBaker.bake(p.model());
                 next.put(p.definition().id(), new BakedCosmetic(p.definition(), model.root(), model.bones(),
-                    p.model().animations(), location, translucentByTexture.get(location)));
+                    p.model().animations(), location, translucentByTexture.get(location), model.center(), model.size()));
             } catch (Exception e) {
                 HtzCosmetics.LOGGER.warn("Ignoring cosmetic '{}': {}", p.definition().id(), e.toString());
             }
