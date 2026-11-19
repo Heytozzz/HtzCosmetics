@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "manifestVersion": 1795040707,
-  "expiresAt": 1810592707,
+  "manifestVersion": 1795048745,
+  "expiresAt": 1810600745,
   "cosmetics": [
     {
       "id": "angel_halo",
@@ -34,11 +34,11 @@
       }
     },
     {
-      "id": "purple_aura",
+      "id": "glow_aura",
       "name": {
-        "en_us": "Purple Aura",
-        "es_es": "Aura Morada",
-        "es_mx": "Aura Morada"
+        "en_us": "Aura",
+        "es_es": "Aura",
+        "es_mx": "Aura"
       },
       "category": "AURA",
       "rarity": "EPIC",
@@ -59,34 +59,12 @@
         "outline": 0.05,
         "outlineStrength": 0.9,
         "fill": 0.05
-      }
-    },
-    {
-      "id": "red_aura",
-      "name": {
-        "en_us": "Red Aura",
-        "es_es": "Aura Roja",
-        "es_mx": "Aura Roja"
       },
-      "category": "AURA",
-      "rarity": "EPIC",
-      "anchor": "BODY",
-      "minFormat": 2,
-      "glow": {
-        "colors": [
-          "#FF0000",
-          "#FF3333"
-        ],
-        "cycle": 4,
-        "emissive": true,
-        "bloom": 0.75,
-        "radius": 3,
-        "pulse": 0
-      },
-      "aura": {
-        "outline": 0.05,
-        "outlineStrength": 0.9,
-        "fill": 0.05
+      "tint": {
+        "default": "#9900FF",
+        "palette": [],
+        "free": true,
+        "glow": true
       }
     },
     {
@@ -99,14 +77,20 @@
       "category": "HEAD",
       "rarity": "UNCOMMON",
       "anchor": "HEAD",
-      "minFormat": 1,
+      "minFormat": 2,
       "model": {
         "sha256": "7e004d0b46f0c8b9689195ffdec236a01e13bf19207b540744a167ced8b3f059",
         "size": 420
       },
       "texture": {
-        "sha256": "020c79a92cf72e9a21605ac7c48b34072beda2b03b37d6b91be9c8d9dba758af",
-        "size": 1078
+        "sha256": "528ddf6eea85cd8b345054696b87514b73fa3787ecb5c1bb0ab574ce371d1e9c",
+        "size": 1073
+      },
+      "tint": {
+        "default": "#CC0000",
+        "palette": [],
+        "free": true,
+        "glow": true
       }
     }
   ]
