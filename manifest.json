@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "manifestVersion": 1795048745,
-  "expiresAt": 1810600745,
+  "manifestVersion": 1795124036,
+  "expiresAt": 1810676036,
   "cosmetics": [
     {
       "id": "angel_halo",
@@ -13,14 +13,14 @@
       "category": "HEAD",
       "rarity": "EPIC",
       "anchor": "HEAD",
-      "minFormat": 2,
+      "minFormat": 3,
       "model": {
-        "sha256": "909dbffefcfba421e166bdd6e026f2531842524b2f10f801a9e90c14526686bc",
-        "size": 1149
+        "sha256": "9ec605f5cae78e1d1bc669a382ff8eb2a5f7a8728fdba60823e21a7d303ff726",
+        "size": 5375
       },
       "texture": {
-        "sha256": "5f9062f4a7a76f0baf9b83d3a7b119f4f4540fa92ef8ec8605168b83432b9799",
-        "size": 591
+        "sha256": "b6ad746b8c38329516e793b3fed6267715d563f7de3d2bac84e3804166fefe40",
+        "size": 494
       },
       "glow": {
         "colors": [
@@ -68,6 +68,58 @@
       }
     },
     {
+      "id": "goat_horns",
+      "name": {
+        "en_us": "Goat Horns",
+        "es_es": "Cuernos de cabra",
+        "es_mx": "Cuernos de cabra"
+      },
+      "category": "HEAD",
+      "rarity": "RARE",
+      "anchor": "HEAD",
+      "minFormat": 2,
+      "model": {
+        "sha256": "c78e46cfad5e23c41a939441a91d64dc5a3f8b0db630eabe76639d3f063556f4",
+        "size": 6083
+      },
+      "texture": {
+        "sha256": "5ecdde4fe8d60191cb8d2c9a2d899cf7ef555a87443239b507709b346a89c91e",
+        "size": 2126
+      },
+      "tint": {
+        "default": "#330000",
+        "palette": [],
+        "free": true,
+        "glow": true
+      }
+    },
+    {
+      "id": "katana",
+      "name": {
+        "en_us": "Katana",
+        "es_es": "Katana",
+        "es_mx": "Katana"
+      },
+      "category": "WAIST",
+      "rarity": "RARE",
+      "anchor": "BODY",
+      "minFormat": 3,
+      "model": {
+        "sha256": "a6e4cbc5d85b60026f276b5027355085c4a56e131c11c6d4f5a4a9019625021a",
+        "size": 10830
+      },
+      "texture": {
+        "sha256": "bd76bf9173c394a6ca5120ebc56873da5293b1f8e8c4aac4b53f3157fb3e706b",
+        "size": 451
+      },
+      "tint": {
+        "default": "#660000",
+        "palette": [],
+        "free": true,
+        "glow": true
+      }
+    },
+    {
       "id": "top_hat",
       "name": {
         "en_us": "Top hat",
@@ -79,8 +131,8 @@
       "anchor": "HEAD",
       "minFormat": 2,
       "model": {
-        "sha256": "7e004d0b46f0c8b9689195ffdec236a01e13bf19207b540744a167ced8b3f059",
-        "size": 420
+        "sha256": "5f649404f8194782756216d11ad9a25afa395fe6f202b34a7af3217016e7b331",
+        "size": 499
       },
       "texture": {
         "sha256": "528ddf6eea85cd8b345054696b87514b73fa3787ecb5c1bb0ab574ce371d1e9c",
@@ -91,6 +143,26 @@
         "palette": [],
         "free": true,
         "glow": true
+      }
+    },
+    {
+      "id": "wave_emote",
+      "name": {
+        "en_us": "Wave",
+        "es_es": "Saludo",
+        "es_mx": "Saludo"
+      },
+      "category": "EMOTE",
+      "rarity": "COMMON",
+      "anchor": "BODY",
+      "minFormat": 4,
+      "model": {
+        "sha256": "fe2d27435e139b6c1fde0bbc1fcfe2128913832af66e4ed4369ec2d8ee4ba52a",
+        "size": 2014
+      },
+      "texture": {
+        "sha256": "ee5f4ae0aae66a3d9ad8166933132bf2fad25da6220d8f02127f69546b5a4795",
+        "size": 96
       }
     }
   ]

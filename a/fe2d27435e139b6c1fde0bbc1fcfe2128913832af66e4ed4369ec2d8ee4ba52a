@@ -1,0 +1,97 @@
+{
+  "format": 1,
+  "texture": {
+    "width": 64,
+    "height": 64
+  },
+  "bones": [],
+  "playerRig": {
+    "root": {
+      "pivot": [0, 24, 0]
+    },
+    "body": {
+      "pivot": [0, 12, 0]
+    },
+    "right_arm": {
+      "pivot": [-5, 2, 0],
+      "parent": "body"
+    },
+    "left_arm": {
+      "pivot": [5, 2, 0],
+      "parent": "body"
+    },
+    "head": {
+      "pivot": [0, 0, 0],
+      "parent": "body"
+    },
+    "right_leg": {
+      "pivot": [-1.9, 12, 0]
+    },
+    "left_leg": {
+      "pivot": [1.9, 12, 0]
+    }
+  },
+  "animations": [
+    {
+      "trigger": "emote",
+      "length": 2,
+      "loop": "once",
+      "bones": {},
+      "player": {
+        "root": {
+          "position": {
+            "interpolation": "linear",
+            "keyframes": [
+              [0.25, 0, 0, 0],
+              [0.375, 0, -1, 0],
+              [0.5, 0, 0, 0]
+            ]
+          }
+        },
+        "body": {
+          "rotation": {
+            "interpolation": "linear",
+            "keyframes": [
+              [0, 0, 0, 0],
+              [0.375, 0, 0, 10],
+              [0.75, 0, 0, 5],
+              [1.125, 0, 0, 10],
+              [2, 0, 0, 0]
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "interpolation": "linear",
+            "keyframes": [
+              [0, 0, 0, 0],
+              [0.375, 0, 0, 155],
+              [0.75, 0.0287, 2.6708, 135.1781],
+              [1.125, 0, 0, 155],
+              [1.625, 0, 0, 0]
+            ]
+          },
+          "position": {
+            "interpolation": "linear",
+            "keyframes": [
+              [0, 0, 0, 0],
+              [1.625, 0, 0, 0]
+            ]
+          }
+        },
+        "right_leg": {
+          "rotation": {
+            "interpolation": "linear",
+            "keyframes": [
+              [0, 0, 0, 0],
+              [0.375, 0, 0, 10],
+              [0.75, 0, 0, 5],
+              [1.125, 0, 0, 10],
+              [2, 0, 0, 0]
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
